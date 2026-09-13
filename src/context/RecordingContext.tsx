@@ -62,7 +62,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({ children 
   const recordingTimerRef = useRef<number | null>(null);
 
   const startRecording = () => {
-    if (!canvasHandleRef.current || !stream) return;
+    if (!stream || stream.getVideoTracks().length === 0) return;
 
     let count = 3;
     setRecordingState((prev) => ({ ...prev, countdown: count }));
@@ -83,13 +83,18 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const executeStartRecording = () => {
-    if (!canvasHandleRef.current || !stream) return;
-    const canvasStream = canvasHandleRef.current.getCanvasStream();
-    if (!canvasStream) return;
+    if (!stream) return;
+
+    // Social-camera architecture:
+    // Record the device camera track directly so the browser/device can use its
+    // native capture + hardware encode path. The studio canvas remains preview-only.
+    // Branding, crops and layouts are applied after capture through Remotion.
+    const sourceVideoTrack = stream.getVideoTracks()[0];
+    if (!sourceVideoTrack || sourceVideoTrack.readyState !== 'live') return;
 
     const mixedStream = new MediaStream();
-    const videoTrack = canvasStream.getVideoTracks()[0];
-    if (videoTrack) mixedStream.addTrack(videoTrack);
+    const videoTrack = sourceVideoTrack;
+    mixedStream.addTrack(videoTrack);
 
     const processedAudioTrack =
       studioAudioEngine.getProcessedAudioTrack() || stream.getAudioTracks()[0];
@@ -113,11 +118,14 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({ children 
       captureSettings.height || cameraQuality.actualHeight || 1080;
     const captureFrameRate =
       captureSettings.frameRate || cameraQuality.actualFrameRate || cameraQuality.frameRate || 30;
-    const masterVideoBitrate = getBitrateForDimensions(
+    const baseBitrate = getBitrateForDimensions(
       captureWidth,
       captureHeight,
       captureFrameRate
     );
+    // Give direct masters extra headroom. Browsers may clamp/ignore the hint,
+    // but when honored this avoids social-video detail being starved.
+    const masterVideoBitrate = Math.round(baseBitrate * 1.5);
 
     try {
       const recorder = new MediaRecorder(mixedStream, {
@@ -164,7 +172,8 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({ children 
         }
       };
 
-      recorder.start(500);
+      // Larger chunks reduce main-thread churn on mobile during sustained capture.
+      recorder.start(1000);
       mediaRecorderRef.current = recorder;
 
       setRecordingState((prev) => ({
