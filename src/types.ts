@@ -83,7 +83,7 @@ export interface CameraQualityConfig {
   resolution: ResolutionPreset;
   frameRate: TargetFrameRate;
   facingMode: CameraFacing;
-  selectedDeviceId: string | null;
+  selectedDeviceId: string;
   actualWidth: number;
   actualHeight: number;
   actualFrameRate: number;
@@ -133,7 +133,7 @@ export interface CloudinaryUsageEstimate {
   bandwidthSavedPercent: number;
 }
 
-export type MobileTab = 'studio' | 'sets' | 'camera' | 'vault' | 'prompter';
+export type MobileTab = 'studio' | 'sets' | 'camera' | 'vault' | 'prompter' | 'mic';
 
 export interface RecordingState {
   isRecording: boolean;
@@ -152,4 +152,21 @@ export interface RecordingState {
   mp4Blob: Blob | null;
   mp4Url: string | null;
   serverDownloadUrl: string | null;
+}
+
+export interface UserWorkspace {
+  id: string;
+  name: string;
+  slug: string;
+  role: 'owner' | 'creator' | 'editor';
+  tier: 'starter' | 'pro_fleet' | 'enterprise';
+  createdAt: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  displayName: string;
+  activeWorkspaceId: string;
+  workspaces: UserWorkspace[];
 }

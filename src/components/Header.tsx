@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles, Sliders, Mic, Image, FileText, HelpCircle, Video, VideoOff, Camera, Cloud } from 'lucide-react';
+import { WorkspaceBadge } from './WorkspaceBadge';
 
 export type ActiveDrawer = 'none' | 'calibration' | 'microphone' | 'setting' | 'teleprompter' | 'camera' | 'cloudinary';
 
@@ -20,7 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="w-full bg-neutral-900/90 border-b border-neutral-800 backdrop-blur-md px-4 sm:px-6 py-2.5 flex items-center justify-between z-20">
-      {/* Brand & App Title */}
+      {/* Brand & App Title + Workspace Selector */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           {/* MOMS Stylized Logo Badge */}
@@ -35,6 +36,11 @@ export const Header: React.FC<HeaderProps> = ({
               Mobile Oil Change &amp; Fleet Maintenance Virtual Set
             </p>
           </div>
+        </div>
+
+        {/* User Workspace Badge & Switcher */}
+        <div className="hidden sm:block pl-2 border-l border-neutral-800">
+          <WorkspaceBadge />
         </div>
       </div>
 

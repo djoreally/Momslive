@@ -23,6 +23,7 @@ interface StudioCanvasProps {
   resolution: ResolutionPreset;
   frameRate: TargetFrameRate;
   showBrandedOverlays: boolean;
+  showMomsOverlay?: boolean;
   audioLevel: number;
   isSamplingColor: boolean;
   onSampledColor: (color: { r: number; g: number; b: number; luminance: number; saturation: number }) => void;
@@ -39,6 +40,7 @@ export const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(({
   resolution,
   frameRate,
   showBrandedOverlays,
+  showMomsOverlay = true,
   audioLevel,
   isSamplingColor,
   onSampledColor,
@@ -48,6 +50,7 @@ export const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const bgImgRef = useRef<HTMLImageElement | null>(null);
+  const momsOverlayImgRef = useRef<HTMLImageElement | null>(null);
   const emptyWallDataRef = useRef<ImageData | null>(null);
   const [hasEmptyWallCapture, setHasEmptyWallCapture] = useState(false);
 
@@ -58,6 +61,16 @@ export const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(({
     videoRef.current?.videoWidth || 3840,
     videoRef.current?.videoHeight || 2160
   );
+
+  // Load MOMS PNG overlay graphic
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = '/moms_overlay.png';
+    img.onload = () => {
+      momsOverlayImgRef.current = img;
+    };
+  }, []);
 
   // Load background image
   useEffect(() => {
@@ -292,7 +305,15 @@ export const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(({
       // 4. DRAW FOREGROUND STUDIO MICROPHONE & STAND WITH WRAP
       drawStudioMicrophone(ctx, canvasWidth, canvasHeight, micConfig, audioLevel);
 
-      // 5. DRAW BRANDED OVERLAYS (MOMS LOGO, WEBSITE, QR CODE)
+      // 5. DRAW BRANDED OVERLAYS (MOMS LOGO, WEBSITE, QR CODE & STUDIO SETTING PNG)
+      if (showMomsOverlay && momsOverlayImgRef.current && momsOverlayImgRef.current.complete) {
+        ctx.save();
+        ctx.globalAlpha = 0.95;
+        // Draw the MOMS studio setting overlay across the video canvas stream
+        ctx.drawImage(momsOverlayImgRef.current, 0, 0, canvasWidth, canvasHeight);
+        ctx.restore();
+      }
+
       if (showBrandedOverlays) {
         ctx.save();
         // If studio backdrop already has graphics, draw subtle complementary lower third or live badge
@@ -346,8 +367,10 @@ export const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(({
     micConfig,
     studioSetting,
     showBrandedOverlays,
+    showMomsOverlay,
     audioLevel,
     isRecording,
+    resolution,
   ]);
 
   return (

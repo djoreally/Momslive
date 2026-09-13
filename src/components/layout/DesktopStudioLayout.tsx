@@ -21,6 +21,7 @@ import { SettingControls } from '../SettingControls';
 import { CloudinaryVaultPanel } from '../CloudinaryVaultPanel';
 import { WhiteWallGuideModal } from '../WhiteWallGuideModal';
 import { VideoReviewModal } from '../VideoReviewModal';
+import { RecordingTimer } from '../RecordingTimer';
 
 export const DesktopStudioLayout: React.FC = () => {
   const {
@@ -57,6 +58,8 @@ export const DesktopStudioLayout: React.FC = () => {
     setAspectRatio,
     showBrandedOverlays,
     setShowBrandedOverlays,
+    showMomsOverlay,
+    setShowMomsOverlay,
     handleUploadCustomBg,
     teleprompterConfig,
     setTeleprompterConfig,
@@ -174,6 +177,7 @@ export const DesktopStudioLayout: React.FC = () => {
             studioSetting={currentSetting}
             aspectRatio={aspectRatio}
             showBrandedOverlays={showBrandedOverlays}
+            showMomsOverlay={showMomsOverlay}
             audioLevel={audioLevel}
             isSamplingColor={isSamplingColor}
             onSampledColor={handleSampledColor}
@@ -181,6 +185,11 @@ export const DesktopStudioLayout: React.FC = () => {
             resolution={cameraQuality.resolution}
             frameRate={cameraQuality.frameRate}
           />
+
+          {/* Floating Visual Recording Session Timer HUD (Top-Center) */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+            <RecordingTimer />
+          </div>
 
           {/* Camera Access Request if no stream */}
           {!stream && (
@@ -283,6 +292,8 @@ export const DesktopStudioLayout: React.FC = () => {
                   onChangeAspectRatio={setAspectRatio}
                   showBrandedOverlays={showBrandedOverlays}
                   onToggleBrandedOverlays={() => setShowBrandedOverlays(!showBrandedOverlays)}
+                  showMomsOverlay={showMomsOverlay}
+                  onToggleMomsOverlay={() => setShowMomsOverlay(!showMomsOverlay)}
                   onUploadCustomBg={handleUploadCustomBg}
                   onChangeBlur={(blur) => setCurrentSetting((prev) => ({ ...prev, blur }))}
                   onChangeBrightness={(brightness) =>

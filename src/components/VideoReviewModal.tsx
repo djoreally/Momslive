@@ -23,6 +23,8 @@ import { convertVideoToMp4, triggerFileDownload } from '../utils/audio';
 import { ResolutionPreset, TargetFrameRate, CloudinaryAsset } from '../types';
 import { RESOLUTION_SPECS } from '../utils/camera';
 import { uploadRecordingToCloudinary } from '../utils/cloudinary';
+import { saveLocalRecording, updateLocalRecordingCloudAsset } from '../utils/indexedDbVault';
+import { useAuth } from '../context/AuthContext';
 
 interface VideoReviewModalProps {
   videoUrl: string | null;
@@ -45,6 +47,9 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   onRetake,
   onOpenCloudVault,
 }) => {
+  const { currentWorkspace } = useAuth();
+  const [localSavedRecordId, setLocalSavedRecordId] = useState<string | null>(null);
+
   const [isConvertingMp4, setIsConvertingMp4] = useState<boolean>(false);
   const [conversionStatus, setConversionStatus] = useState<string>('');
   const [mp4Blob, setMp4Blob] = useState<Blob | null>(null);
@@ -67,6 +72,30 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
     const now = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     return `MOMS_Mobile_Oil_Studio_${now}.${ext}`;
   };
+
+  // Auto-save recording instantly to browser IndexedDB store under active workspace
+  useEffect(() => {
+    if (videoBlob && currentWorkspace?.id) {
+      const recordId = `rec_${Date.now()}`;
+      setLocalSavedRecordId(recordId);
+
+      saveLocalRecording({
+        id: recordId,
+        workspaceId: currentWorkspace.id,
+        title: `MOMS Studio - ${currentWorkspace.name} (${resSpec.shortName})`,
+        blob: videoBlob,
+        mimeType: videoBlob.type || 'video/webm',
+        durationSeconds,
+        resolution,
+        frameRate,
+        sizeBytes: videoBlob.size,
+        createdAt: Date.now(),
+        tags: [currentWorkspace.slug, 'studio', resSpec.shortName],
+      }).catch((err) => {
+        console.warn('Could not auto-save to IndexedDB:', err);
+      });
+    }
+  }, [videoBlob, currentWorkspace?.id, durationSeconds, resolution, frameRate, resSpec.shortName]);
 
   useEffect(() => {
     if (videoUrl) {
@@ -197,13 +226,20 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
       const asset = await uploadRecordingToCloudinary(
         target,
         {
-          title: `MOMS Mobile Oil Studio - ${resSpec.shortName} ${frameRate}fps`,
+          title: `MOMS Mobile Oil Studio - ${currentWorkspace?.name || 'Fleet'} - ${resSpec.shortName} ${frameRate}fps`,
           resolution,
           frameRate,
         },
         (status) => setCloudUploadStatus(status)
       );
       setCloudAsset(asset);
+
+      // Link cloud asset back into the IndexedDB local record
+      if (localSavedRecordId) {
+        updateLocalRecordingCloudAsset(localSavedRecordId, asset).catch((err) => {
+          console.warn('Could not link cloud asset to IndexedDB record:', err);
+        });
+      }
     } catch (err: unknown) {
       console.error('Cloudinary upload error:', err);
       const msg = err instanceof Error ? err.message : 'Upload failed';
@@ -245,9 +281,24 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
                   Studio Sound
                 </span>
               </h3>
-              <p className="text-xs text-neutral-400">
-                Duration: <strong className="text-neutral-200">{formatTime(durationSeconds)}</strong> • Master:{' '}
-                <strong className="text-neutral-300">{resSpec.label}</strong>
+              <p className="text-xs text-neutral-400 flex items-center gap-2 flex-wrap">
+                <span>Duration: <strong className="text-neutral-200">{formatTime(durationSeconds)}</strong></span>
+                <span>•</span>
+                <span>Master: <strong className="text-neutral-300">{resSpec.label}</strong></span>
+                {currentWorkspace && (
+                  <>
+                    <span>•</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-600/30 text-blue-300 font-semibold border border-blue-500/30">
+                      {currentWorkspace.name}
+                    </span>
+                  </>
+                )}
+                {localSavedRecordId && (
+                  <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    <span>Saved in Local IndexedDB</span>
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -460,7 +511,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
               <span>WebM</span>
             </button>
 
-            {/* Cloudinary Upload & Process Button */}
+            {/* Cloudinary Upload & Process Button (Save Button) */}
             <button
               id="upload-cloudinary-btn"
               disabled={isUploadingToCloud}
@@ -468,24 +519,24 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
               className={`px-4 py-2.5 rounded-xl font-bold text-xs text-white shadow-md flex items-center justify-center gap-2 transition-all ${
                 cloudAsset
                   ? 'bg-emerald-700 hover:bg-emerald-600 border border-emerald-500/50'
-                  : 'bg-purple-600 hover:bg-purple-500 border border-purple-400/40 hover:scale-105 active:scale-95'
+                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border border-purple-400/40 hover:scale-105 active:scale-95'
               }`}
-              title="Upload to Cloudinary for cloud storage, 48kHz podcast audio extraction & CDN streaming"
+              title="Save to your workspace Cloudinary cloud vault for streaming, MP3 podcast audio extraction & permanent hosting"
             >
               {isUploadingToCloud ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-purple-200" />
-                  <span>Uploading...</span>
+                  <span>Saving to Vault...</span>
                 </>
               ) : cloudAsset ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-200" />
-                  <span>Uploaded to Cloud</span>
+                  <span>Saved in Workspace Vault</span>
                 </>
               ) : (
                 <>
                   <Cloud className="w-4 h-4 text-purple-200" />
-                  <span>Upload to Cloudinary</span>
+                  <span>Save to Cloud Vault</span>
                 </>
               )}
             </button>

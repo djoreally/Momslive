@@ -73,6 +73,8 @@ interface StudioContextType {
   setAspectRatio: React.Dispatch<React.SetStateAction<AspectRatio>>;
   showBrandedOverlays: boolean;
   setShowBrandedOverlays: React.Dispatch<React.SetStateAction<boolean>>;
+  showMomsOverlay: boolean;
+  setShowMomsOverlay: React.Dispatch<React.SetStateAction<boolean>>;
   handleUploadCustomBg: (file: File) => void;
 
   // Teleprompter
@@ -151,6 +153,7 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [currentSetting, setCurrentSetting] = useState<StudioSetting>(DEFAULT_STUDIOS[0]);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
   const [showBrandedOverlays, setShowBrandedOverlays] = useState<boolean>(true);
+  const [showMomsOverlay, setShowMomsOverlay] = useState<boolean>(true);
 
   const [teleprompterConfig, setTeleprompterConfig] = useState<TeleprompterConfig>({
     enabled: false,
@@ -415,6 +418,8 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setAspectRatio,
         showBrandedOverlays,
         setShowBrandedOverlays,
+        showMomsOverlay,
+        setShowMomsOverlay,
         handleUploadCustomBg,
         teleprompterConfig,
         setTeleprompterConfig,

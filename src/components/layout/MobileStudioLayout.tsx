@@ -28,6 +28,8 @@ import { CameraSettingsPanel } from '../CameraSettingsPanel';
 import { CloudinaryVaultPanel } from '../CloudinaryVaultPanel';
 import { VideoReviewModal } from '../VideoReviewModal';
 import { WhiteWallGuideModal } from '../WhiteWallGuideModal';
+import { RecordingTimer } from '../RecordingTimer';
+import { WorkspaceBadge } from '../WorkspaceBadge';
 import { MobileTab } from '../../types';
 
 export const MobileStudioLayout: React.FC = () => {
@@ -65,6 +67,8 @@ export const MobileStudioLayout: React.FC = () => {
     setAspectRatio,
     showBrandedOverlays,
     setShowBrandedOverlays,
+    showMomsOverlay,
+    setShowMomsOverlay,
     handleUploadCustomBg,
     teleprompterConfig,
     setTeleprompterConfig,
@@ -98,7 +102,8 @@ export const MobileStudioLayout: React.FC = () => {
           <div className="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs shadow-md shadow-blue-500/30">
             M
           </div>
-          <span className="text-xs font-bold tracking-tight text-white">MOMS Studio</span>
+          <span className="text-xs font-bold tracking-tight text-white hidden xs:inline">MOMS</span>
+          <WorkspaceBadge />
         </div>
 
         {/* Quick Lens & Quality Badges */}
@@ -181,6 +186,7 @@ export const MobileStudioLayout: React.FC = () => {
           studioSetting={currentSetting}
           aspectRatio={aspectRatio}
           showBrandedOverlays={showBrandedOverlays}
+          showMomsOverlay={showMomsOverlay}
           audioLevel={audioLevel}
           isSamplingColor={isSamplingColor}
           onSampledColor={handleSampledColor}
@@ -188,6 +194,11 @@ export const MobileStudioLayout: React.FC = () => {
           resolution={cameraQuality.resolution}
           frameRate={cameraQuality.frameRate}
         />
+
+        {/* Visual Recording Session Timer HUD (Mobile Top Center) */}
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+          <RecordingTimer compact />
+        </div>
 
         {/* Floating Quick Action Overlay on Studio View */}
         {activeTab === 'studio' && (
@@ -289,6 +300,8 @@ export const MobileStudioLayout: React.FC = () => {
                   onChangeAspectRatio={setAspectRatio}
                   showBrandedOverlays={showBrandedOverlays}
                   onToggleBrandedOverlays={() => setShowBrandedOverlays(!showBrandedOverlays)}
+                  showMomsOverlay={showMomsOverlay}
+                  onToggleMomsOverlay={() => setShowMomsOverlay(!showMomsOverlay)}
                   onUploadCustomBg={handleUploadCustomBg}
                   onChangeBlur={(blur) => setCurrentSetting((prev) => ({ ...prev, blur }))}
                   onChangeBrightness={(brightness) =>

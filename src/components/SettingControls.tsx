@@ -10,6 +10,8 @@ interface SettingControlsProps {
   onChangeAspectRatio: (ratio: AspectRatio) => void;
   showBrandedOverlays: boolean;
   onToggleBrandedOverlays: () => void;
+  showMomsOverlay?: boolean;
+  onToggleMomsOverlay?: () => void;
   onUploadCustomBg: (file: File) => void;
   onChangeBlur: (blur: number) => void;
   onChangeBrightness: (brightness: number) => void;
@@ -23,6 +25,8 @@ export const SettingControls: React.FC<SettingControlsProps> = ({
   onChangeAspectRatio,
   showBrandedOverlays,
   onToggleBrandedOverlays,
+  showMomsOverlay = true,
+  onToggleMomsOverlay,
   onUploadCustomBg,
   onChangeBlur,
   onChangeBrightness,
@@ -164,6 +168,35 @@ export const SettingControls: React.FC<SettingControlsProps> = ({
             />
           </div>
         </div>
+      </div>
+
+      {/* MOMS Mobile Oil Change Studio Setting PNG Overlay Toggle */}
+      <div className="p-3.5 rounded-xl bg-neutral-800/80 border border-neutral-700 flex items-center justify-between">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-white text-xs uppercase tracking-wider">
+              'MOMS Mobile Oil Change' Studio Setting PNG Overlay
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+              Official Set
+            </span>
+          </div>
+          <div className="text-[11px] text-neutral-400">
+            Dynamically overlay the official MOMS Mobile Oil Change studio setting PNG banner directly onto your live video stream
+          </div>
+        </div>
+        <button
+          id="toggle-moms-studio-overlay-btn"
+          onClick={onToggleMomsOverlay}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ml-3 ${
+            showMomsOverlay
+              ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-sm ring-1 ring-amber-400/40'
+              : 'bg-neutral-700 text-neutral-400 hover:text-white'
+          }`}
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>{showMomsOverlay ? 'Overlay Active' : 'Overlay Off'}</span>
+        </button>
       </div>
 
       {/* Branded Graphic Overlays */}

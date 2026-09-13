@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AuthProvider } from './context/AuthContext';
 import { StudioProvider } from './context/StudioContext';
 import { RecordingProvider } from './context/RecordingContext';
 import { CloudinaryProvider } from './context/CloudinaryContext';
@@ -27,12 +28,15 @@ function StudioRoot() {
 
 export default function App() {
   return (
-    <StudioProvider>
-      <RecordingProvider>
-        <CloudinaryProvider>
-          <StudioRoot />
-        </CloudinaryProvider>
-      </RecordingProvider>
-    </StudioProvider>
+    <AuthProvider>
+      <StudioProvider>
+        <RecordingProvider>
+          <CloudinaryProvider>
+            <StudioRoot />
+          </CloudinaryProvider>
+        </RecordingProvider>
+      </StudioProvider>
+    </AuthProvider>
   );
 }
+
