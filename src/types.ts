@@ -83,7 +83,7 @@ export interface CameraQualityConfig {
   resolution: ResolutionPreset;
   frameRate: TargetFrameRate;
   facingMode: CameraFacing;
-  selectedDeviceId: string;
+  selectedDeviceId: string | null;
   actualWidth: number;
   actualHeight: number;
   actualFrameRate: number;

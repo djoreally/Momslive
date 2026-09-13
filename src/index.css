@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  background: #0a0a0a;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #0a0a0a;
+}
+
+body {
+  overflow: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
