@@ -1,0 +1,6 @@
+{
+  "name": "White Screen Studio - Video Creator",
+  "description": "Record branded videos against a white wall with real-time background removal, podcast mic wrap overlay, and MOMS Mobile Oil Change studio setting.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
