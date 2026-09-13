@@ -129,6 +129,7 @@ export interface CloudinaryUploadOptions {
   resolution?: string;
   frameRate?: number;
   tags?: string[];
+  workspaceSlug?: string;
 }
 
 export async function uploadToCloudinary(
@@ -153,6 +154,7 @@ export async function uploadToCloudinary(
       caption: options.title || 'MOMS Studio Recording',
       resolution: options.resolution || 'master',
       frameRate: options.frameRate ? String(options.frameRate) : '60',
+      workspaceSlug: options.workspaceSlug || 'default',
     },
     // Generate eager transformations for instant ready-to-stream formats
     eager: [
@@ -226,4 +228,58 @@ export async function deleteFromCloudinary(publicId: string) {
     resource_type: 'video',
     invalidate: true,
   });
+}
+
+
+export async function uploadBufferToCloudinary(
+  buffer: Buffer,
+  options: CloudinaryUploadOptions = {}
+) {
+  const client = getCloudinaryClient();
+  const cloudName = getCloudName();
+
+  const customTags = [
+    'moms-white-screen-studio',
+    'moms-rendered-export',
+    options.resolution ? `res-${options.resolution}` : 'rendered-video',
+    ...(options.tags || []),
+  ];
+
+  const uploadResult = await new Promise<UploadApiResponse>((resolve, reject) => {
+    const stream = client.uploader.upload_stream(
+      {
+        resource_type: 'video',
+        folder: 'moms_studio_recordings/rendered',
+        tags: customTags,
+        context: {
+          caption: options.title || 'MOMS Rendered Export',
+          resolution: options.resolution || 'social',
+          frameRate: options.frameRate ? String(options.frameRate) : '30',
+          workspaceSlug: options.workspaceSlug || 'default',
+        },
+      },
+      (error, result) => {
+        if (error || !result) {
+          reject(error || new Error('Cloudinary render upload failed'));
+          return;
+        }
+        resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+
+  const derived = buildDerivedUrls(cloudName, uploadResult.public_id);
+  return {
+    publicId: uploadResult.public_id,
+    secureUrl: uploadResult.secure_url,
+    format: uploadResult.format,
+    bytes: uploadResult.bytes,
+    duration: uploadResult.duration || 0,
+    width: uploadResult.width || 0,
+    height: uploadResult.height || 0,
+    createdAt: uploadResult.created_at,
+    resourceType: uploadResult.resource_type,
+    ...derived,
+  };
 }

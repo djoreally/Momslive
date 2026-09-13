@@ -513,8 +513,10 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
               >
                 <MomsRemotionPreview
                   videoUrl={mp4Url || videoUrl}
+                  renderSourceUrl={cloudAsset?.secureUrl}
                   durationSeconds={durationSeconds}
                   workspaceName={currentWorkspace?.name}
+                  workspaceSlug={currentWorkspace?.slug}
                 />
               </React.Suspense>
             </div>
