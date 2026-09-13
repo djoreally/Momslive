@@ -81,8 +81,49 @@ export function getTargetDimensions(
  * Computes high-quality video bitrate based on resolution and framerate
  */
 export function getBitrateForConfig(resolution: ResolutionPreset, frameRate: TargetFrameRate): number {
-  const spec = RESOLUTION_SPECS[resolution] || RESOLUTION_SPECS['4k'];
+  const spec = RESOLUTION_SPECS[resolution] || RESOLUTION_SPECS['1080p'];
   return frameRate === 60 ? spec.bitrate60 : spec.bitrate30;
+}
+
+/**
+ * Browser canvas compositing at 4K/8K is extremely expensive on phones.
+ * Keep the live recording pipeline at a profile the device can sustain.
+ * Higher-resolution masters remain available on capable desktop hardware.
+ */
+export function getSafeCaptureConfig(
+  resolution: ResolutionPreset,
+  frameRate: TargetFrameRate,
+  userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+): { resolution: ResolutionPreset; frameRate: TargetFrameRate; wasCapped: boolean } {
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+
+  if (isMobile) {
+    const cappedResolution: ResolutionPreset =
+      resolution === '1080p' ? '1080p' : '1080p';
+    const cappedFrameRate: TargetFrameRate = 30;
+    return {
+      resolution: cappedResolution,
+      frameRate: cappedFrameRate,
+      wasCapped: resolution !== cappedResolution || frameRate !== cappedFrameRate,
+    };
+  }
+
+  return { resolution, frameRate, wasCapped: false };
+}
+
+/**
+ * Select a realistic encoder bitrate from the dimensions the camera/canvas
+ * is actually producing instead of trusting the requested preset label.
+ */
+export function getBitrateForDimensions(width: number, height: number, frameRate: number): number {
+  const pixels = Math.max(1, width * height);
+  const fps = frameRate >= 50 ? 60 : 30;
+
+  if (pixels >= 3840 * 2160) return fps === 60 ? 38_000_000 : 26_000_000;
+  if (pixels >= 2560 * 1440) return fps === 60 ? 18_000_000 : 13_000_000;
+  if (pixels >= 1920 * 1080) return fps === 60 ? 12_000_000 : 8_000_000;
+  if (pixels >= 1280 * 720) return fps === 60 ? 8_000_000 : 5_000_000;
+  return fps === 60 ? 5_000_000 : 3_000_000;
 }
 
 /**
