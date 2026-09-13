@@ -24,7 +24,9 @@
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "remotion": "4.0.523",
+    "@remotion/player": "4.0.523"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
