@@ -25,6 +25,7 @@ import { RESOLUTION_SPECS } from '../utils/camera';
 import { uploadRecordingToCloudinary } from '../utils/cloudinary';
 import { saveLocalRecording, updateLocalRecordingCloudAsset } from '../utils/indexedDbVault';
 import { useAuth } from '../context/AuthContext';
+import { MomsRemotionPreview } from '../remotion/MomsRemotionPreview';
 
 interface VideoReviewModalProps {
   videoUrl: string | null;
@@ -64,6 +65,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const [cloudAsset, setCloudAsset] = useState<CloudinaryAsset | null>(null);
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [copiedLinkKey, setCopiedLinkKey] = useState<string | null>(null);
+  const [showRemotionStudio, setShowRemotionStudio] = useState<boolean>(false);
 
   const resSpec = RESOLUTION_SPECS[resolution] || RESOLUTION_SPECS['4k'];
 
@@ -474,6 +476,38 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
             </div>
           </div>
         )}
+
+        {/* Remotion Post-Production */}
+        <div className="mb-3 rounded-xl border border-fuchsia-500/30 bg-fuchsia-950/20 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowRemotionStudio((open) => !open)}
+            className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-fuchsia-500/10 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white">Create Social Version</div>
+                <div className="text-[10px] text-neutral-400">Remotion branded 9:16, 16:9 and square previews</div>
+              </div>
+            </div>
+            <span className="text-[10px] px-2 py-1 rounded-full border border-fuchsia-500/40 text-fuchsia-300 font-bold">
+              {showRemotionStudio ? 'CLOSE' : 'OPEN'}
+            </span>
+          </button>
+
+          {showRemotionStudio && (
+            <div className="border-t border-fuchsia-500/20 p-3.5 max-h-[48vh] overflow-y-auto">
+              <MomsRemotionPreview
+                videoUrl={mp4Url || videoUrl}
+                durationSeconds={durationSeconds}
+                workspaceName={currentWorkspace?.name}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Action Controls */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-neutral-800">
