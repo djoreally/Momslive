@@ -25,7 +25,10 @@ import { RESOLUTION_SPECS } from '../utils/camera';
 import { uploadRecordingToCloudinary } from '../utils/cloudinary';
 import { saveLocalRecording, updateLocalRecordingCloudAsset } from '../utils/indexedDbVault';
 import { useAuth } from '../context/AuthContext';
-import { MomsRemotionPreview } from '../remotion/MomsRemotionPreview';
+
+const MomsRemotionPreview = React.lazy(() =>
+  import('../remotion/MomsRemotionPreview').then((module) => ({ default: module.MomsRemotionPreview }))
+);
 
 interface VideoReviewModalProps {
   videoUrl: string | null;
@@ -500,11 +503,20 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
 
           {showRemotionStudio && (
             <div className="border-t border-fuchsia-500/20 p-3.5 max-h-[48vh] overflow-y-auto">
-              <MomsRemotionPreview
-                videoUrl={mp4Url || videoUrl}
-                durationSeconds={durationSeconds}
-                workspaceName={currentWorkspace?.name}
-              />
+              <React.Suspense
+                fallback={
+                  <div className="min-h-40 flex items-center justify-center gap-2 text-xs text-neutral-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading Remotion Studio...
+                  </div>
+                }
+              >
+                <MomsRemotionPreview
+                  videoUrl={mp4Url || videoUrl}
+                  durationSeconds={durationSeconds}
+                  workspaceName={currentWorkspace?.name}
+                />
+              </React.Suspense>
             </div>
           )}
         </div>
