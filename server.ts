@@ -5,6 +5,7 @@ import fs from 'fs';
 import os from 'os';
 import { exec } from 'child_process';
 import { createServer as createViteServer } from 'vite';
+import { renderRemotionToCloudinary } from './server/remotion';
 import {
   isCloudinaryConfigured,
   getCloudName,
@@ -221,6 +222,37 @@ async function startServer() {
       res.status(500).json({
         error: err.message || 'Failed to upload and process with Cloudinary',
       });
+    }
+  });
+
+  // Render a branded social MP4 in an ephemeral Vercel Sandbox, then persist only the result to Cloudinary.
+  app.post('/api/remotion/render', async (req, res) => {
+    if (!isCloudinaryConfigured()) {
+      return res.status(400).json({ error: 'Cloudinary is not configured' });
+    }
+
+    try {
+      const { videoUrl, durationSeconds, format, title, subtitle, workspaceSlug } = req.body || {};
+      if (!videoUrl || typeof videoUrl !== 'string' || !videoUrl.startsWith('https://')) {
+        return res.status(400).json({ error: 'A public HTTPS source videoUrl is required. Upload the master to Cloudinary first.' });
+      }
+      if (!['vertical', 'landscape', 'square'].includes(format)) {
+        return res.status(400).json({ error: 'Invalid render format' });
+      }
+
+      const asset = await renderRemotionToCloudinary({
+        videoUrl,
+        durationSeconds: Number(durationSeconds) || 1,
+        format,
+        title: typeof title === 'string' ? title.slice(0, 160) : undefined,
+        subtitle: typeof subtitle === 'string' ? subtitle.slice(0, 240) : undefined,
+        workspaceSlug: typeof workspaceSlug === 'string' ? workspaceSlug.replace(/[^a-z0-9-_]/gi, '').slice(0, 80) : undefined,
+      });
+
+      res.json({ success: true, asset });
+    } catch (err: any) {
+      console.error('Remotion render error:', err);
+      res.status(500).json({ error: err.message || 'Failed to render social video' });
     }
   });
 
