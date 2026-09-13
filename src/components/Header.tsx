@@ -1,7 +1,7 @@
 import React from 'react';
-import { Sparkles, Sliders, Mic, Image, FileText, HelpCircle, Video, VideoOff, Camera } from 'lucide-react';
+import { Sparkles, Sliders, Mic, Image, FileText, HelpCircle, Video, VideoOff, Camera, Cloud } from 'lucide-react';
 
-export type ActiveDrawer = 'none' | 'calibration' | 'microphone' | 'setting' | 'teleprompter' | 'camera';
+export type ActiveDrawer = 'none' | 'calibration' | 'microphone' | 'setting' | 'teleprompter' | 'camera' | 'cloudinary';
 
 interface HeaderProps {
   activeDrawer: ActiveDrawer;
@@ -121,6 +121,21 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <FileText className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Script</span>
+        </button>
+
+        {/* Cloudinary Cloud Storage & Processing Tab */}
+        <button
+          id="tab-cloudinary-btn"
+          onClick={() => onToggleDrawer(activeDrawer === 'cloudinary' ? 'none' : 'cloudinary')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+            activeDrawer === 'cloudinary'
+              ? 'bg-purple-600 border-purple-500 text-white shadow-sm'
+              : 'bg-neutral-800/80 border-neutral-700 text-purple-300 hover:text-white hover:bg-neutral-800'
+          }`}
+          title="Cloudinary Cloud Vault: Media Storage, Podcast Audio & CDN"
+        >
+          <Cloud className="w-3.5 h-3.5 text-purple-400" />
+          <span className="hidden sm:inline">Cloud Vault</span>
         </button>
 
         {/* Camera Permission status */}

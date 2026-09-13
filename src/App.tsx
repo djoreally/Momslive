@@ -1,11 +1,38 @@
-'use client';
+import React, { useState, useEffect } from 'react';
+import { StudioProvider } from './context/StudioContext';
+import { RecordingProvider } from './context/RecordingContext';
+import { CloudinaryProvider } from './context/CloudinaryContext';
+import { DesktopStudioLayout } from './components/layout/DesktopStudioLayout';
+import { MobileStudioLayout } from './components/layout/MobileStudioLayout';
 
-import StudioWorkspace from './features/studio/StudioWorkspace';
+function StudioRoot() {
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
 
-/**
- * Compatibility entrypoint for consumers that still import the legacy App module.
- * The actual studio composition now lives in the feature module.
- */
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return isMobile ? <MobileStudioLayout /> : <DesktopStudioLayout />;
+}
+
 export default function App() {
-  return <StudioWorkspace />;
+  return (
+    <StudioProvider>
+      <RecordingProvider>
+        <CloudinaryProvider>
+          <StudioRoot />
+        </CloudinaryProvider>
+      </RecordingProvider>
+    </StudioProvider>
+  );
 }

@@ -92,6 +92,49 @@ export interface CameraQualityConfig {
 
 export type RecordingFormat = 'mp4' | 'webm';
 
+export interface CloudinaryConfigStatus {
+  configured: boolean;
+  cloudName?: string;
+  message?: string;
+}
+
+export interface CloudinaryAsset {
+  publicId: string;
+  secureUrl: string;
+  streamingUrl?: string;
+  format: string;
+  bytes: number;
+  duration: number;
+  width: number;
+  height: number;
+  createdAt: string;
+  resourceType: string;
+  thumbnailUrl: string;
+  audioUrl: string;
+  verticalUrl?: string;
+  squareUrl?: string;
+  waveformUrl?: string;
+}
+
+export interface CloudinaryCostConfig {
+  lazyTransforms: boolean; // Generate formats on-demand via URL instead of eager compute
+  optimizedDeliveryCodec: boolean; // Append f_auto,q_auto for 40-60% bandwidth savings
+  storageQuotaWarningGb: number; // e.g. 20GB of 25GB free tier limit
+  autoCleanScratchTakes: boolean; // Purge test takes < 5s to preserve storage
+  defaultPodcastBitrate: '192k' | '256k' | '320k';
+}
+
+export interface CloudinaryUsageEstimate {
+  totalAssets: number;
+  totalBytes: number;
+  totalStorageMb: number;
+  estimatedCreditsUsed: number; // 25 credits available in free tier
+  creditsRemaining: number;
+  bandwidthSavedPercent: number;
+}
+
+export type MobileTab = 'studio' | 'sets' | 'camera' | 'vault' | 'prompter';
+
 export interface RecordingState {
   isRecording: boolean;
   isPaused: boolean;

@@ -13,10 +13,16 @@ import {
   Sparkles,
   AlertCircle,
   Tv,
+  Cloud,
+  Copy,
+  Music,
+  Smartphone,
+  Share2,
 } from 'lucide-react';
 import { convertVideoToMp4, triggerFileDownload } from '../utils/audio';
-import { ResolutionPreset, TargetFrameRate } from '../types';
+import { ResolutionPreset, TargetFrameRate, CloudinaryAsset } from '../types';
 import { RESOLUTION_SPECS } from '../utils/camera';
+import { uploadRecordingToCloudinary } from '../utils/cloudinary';
 
 interface VideoReviewModalProps {
   videoUrl: string | null;
@@ -26,6 +32,7 @@ interface VideoReviewModalProps {
   frameRate?: TargetFrameRate;
   onClose: () => void;
   onRetake: () => void;
+  onOpenCloudVault?: () => void;
 }
 
 export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
@@ -36,6 +43,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   frameRate = 60,
   onClose,
   onRetake,
+  onOpenCloudVault,
 }) => {
   const [isConvertingMp4, setIsConvertingMp4] = useState<boolean>(false);
   const [conversionStatus, setConversionStatus] = useState<string>('');
@@ -44,6 +52,13 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
   const [serverDownloadUrl, setServerDownloadUrl] = useState<string | null>(null);
   const [downloadSuccessMessage, setDownloadSuccessMessage] = useState<string | null>(null);
   const [conversionError, setConversionError] = useState<string | null>(null);
+
+  // Cloudinary state
+  const [isUploadingToCloud, setIsUploadingToCloud] = useState<boolean>(false);
+  const [cloudUploadStatus, setCloudUploadStatus] = useState<string>('');
+  const [cloudAsset, setCloudAsset] = useState<CloudinaryAsset | null>(null);
+  const [cloudError, setCloudError] = useState<string | null>(null);
+  const [copiedLinkKey, setCopiedLinkKey] = useState<string | null>(null);
 
   const resSpec = RESOLUTION_SPECS[resolution] || RESOLUTION_SPECS['4k'];
 
@@ -169,6 +184,42 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
     }
   };
 
+  // Upload to Cloudinary for storage & processing (auto CDN, audio extraction, social crops)
+  const handleUploadToCloudinary = async () => {
+    const target = mp4Blob || videoBlob;
+    if (!target) return;
+
+    setIsUploadingToCloud(true);
+    setCloudError(null);
+    setCloudUploadStatus('Connecting to Cloudinary...');
+
+    try {
+      const asset = await uploadRecordingToCloudinary(
+        target,
+        {
+          title: `MOMS Mobile Oil Studio - ${resSpec.shortName} ${frameRate}fps`,
+          resolution,
+          frameRate,
+        },
+        (status) => setCloudUploadStatus(status)
+      );
+      setCloudAsset(asset);
+    } catch (err: unknown) {
+      console.error('Cloudinary upload error:', err);
+      const msg = err instanceof Error ? err.message : 'Upload failed';
+      setCloudError(msg);
+    } finally {
+      setIsUploadingToCloud(false);
+      setCloudUploadStatus('');
+    }
+  };
+
+  const handleCopyLink = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedLinkKey(key);
+    setTimeout(() => setCopiedLinkKey(null), 2000);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div
@@ -258,6 +309,121 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
           </div>
         )}
 
+        {/* Cloudinary Uploading Indicator */}
+        {isUploadingToCloud && (
+          <div className="mb-3 px-4 py-2.5 rounded-xl bg-purple-950/70 border border-purple-600/40 text-purple-200 text-xs flex items-center gap-2.5 animate-pulse">
+            <Loader2 className="w-4 h-4 text-purple-400 animate-spin shrink-0" />
+            <span>{cloudUploadStatus || 'Uploading to Cloudinary & running cloud processing...'}</span>
+          </div>
+        )}
+
+        {/* Cloudinary Error */}
+        {cloudError && (
+          <div className="mb-3 px-4 py-2 rounded-xl bg-amber-950/70 border border-amber-600/40 text-amber-200 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{cloudError}</span>
+          </div>
+        )}
+
+        {/* Cloudinary Success Card */}
+        {cloudAsset && (
+          <div className="mb-3 p-3.5 rounded-xl bg-neutral-900/90 border border-emerald-500/40 space-y-2.5 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <Cloud className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>Processed &amp; Stored on Cloudinary CDN</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
+                      LIVE
+                    </span>
+                  </h4>
+                  <p className="text-[10px] text-neutral-400">
+                    Video streaming master, 48kHz podcast audio &amp; social crops generated
+                  </p>
+                </div>
+              </div>
+              {onOpenCloudVault && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenCloudVault();
+                  }}
+                  className="px-2.5 py-1 text-[11px] font-semibold text-sky-400 hover:text-white bg-sky-950/60 hover:bg-sky-900/60 border border-sky-600/40 rounded-lg transition-colors"
+                >
+                  View in Vault →
+                </button>
+              )}
+            </div>
+
+            {/* Quick Copy Link Actions */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
+              <button
+                onClick={() => handleCopyLink(cloudAsset.secureUrl, 'video')}
+                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 flex items-center justify-between border border-neutral-700 transition-colors"
+                title="Copy Cloudinary CDN Video Stream URL"
+              >
+                <span className="flex items-center gap-1 truncate">
+                  <Film className="w-3 h-3 text-sky-400 shrink-0" />
+                  <span>CDN Video</span>
+                </span>
+                {copiedLinkKey === 'video' ? (
+                  <Check className="w-3 h-3 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3 h-3 text-neutral-400" />
+                )}
+              </button>
+
+              <button
+                onClick={() => handleCopyLink(cloudAsset.audioUrl, 'audio')}
+                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 flex items-center justify-between border border-neutral-700 transition-colors"
+                title="Copy Extracted 48kHz Podcast Audio MP3 URL"
+              >
+                <span className="flex items-center gap-1 truncate">
+                  <Music className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>Podcast MP3</span>
+                </span>
+                {copiedLinkKey === 'audio' ? (
+                  <Check className="w-3 h-3 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3 h-3 text-neutral-400" />
+                )}
+              </button>
+
+              <button
+                onClick={() => handleCopyLink(cloudAsset.verticalUrl || cloudAsset.secureUrl, 'reel')}
+                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 flex items-center justify-between border border-neutral-700 transition-colors"
+                title="Copy 9:16 Social Reel Cut URL"
+              >
+                <span className="flex items-center gap-1 truncate">
+                  <Smartphone className="w-3 h-3 text-purple-400 shrink-0" />
+                  <span>9:16 Reel Cut</span>
+                </span>
+                {copiedLinkKey === 'reel' ? (
+                  <Check className="w-3 h-3 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3 h-3 text-neutral-400" />
+                )}
+              </button>
+
+              <a
+                href={cloudAsset.secureUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-2 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 flex items-center justify-between border border-neutral-700 transition-colors"
+                title="Open Video in Cloudinary CDN"
+              >
+                <span className="flex items-center gap-1 truncate">
+                  <ExternalLink className="w-3 h-3 text-blue-400 shrink-0" />
+                  <span>Open CDN</span>
+                </span>
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Action Controls */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-neutral-800">
           {/* Retake Button */}
@@ -270,7 +436,7 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
             <span>Retake</span>
           </button>
 
-          {/* Download Buttons Group */}
+          {/* Action Buttons Group */}
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             {/* Open in New Tab Fallback */}
             <button
@@ -287,11 +453,41 @@ export const VideoReviewModal: React.FC<VideoReviewModalProps> = ({
             <button
               id="download-webm-btn"
               onClick={handleDownloadWebm}
-              className="px-3.5 py-2 rounded-xl border border-neutral-700 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              className="px-3 py-2 rounded-xl border border-neutral-700 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
               title="Download original WebM video recording"
             >
               <FileVideo className="w-3.5 h-3.5 text-neutral-400" />
               <span>WebM</span>
+            </button>
+
+            {/* Cloudinary Upload & Process Button */}
+            <button
+              id="upload-cloudinary-btn"
+              disabled={isUploadingToCloud}
+              onClick={handleUploadToCloudinary}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs text-white shadow-md flex items-center justify-center gap-2 transition-all ${
+                cloudAsset
+                  ? 'bg-emerald-700 hover:bg-emerald-600 border border-emerald-500/50'
+                  : 'bg-purple-600 hover:bg-purple-500 border border-purple-400/40 hover:scale-105 active:scale-95'
+              }`}
+              title="Upload to Cloudinary for cloud storage, 48kHz podcast audio extraction & CDN streaming"
+            >
+              {isUploadingToCloud ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-200" />
+                  <span>Uploading...</span>
+                </>
+              ) : cloudAsset ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-200" />
+                  <span>Uploaded to Cloud</span>
+                </>
+              ) : (
+                <>
+                  <Cloud className="w-4 h-4 text-purple-200" />
+                  <span>Upload to Cloudinary</span>
+                </>
+              )}
             </button>
 
             {/* Primary Download Button: MP4 (H.264 / AAC) */}
