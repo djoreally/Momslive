@@ -77,6 +77,12 @@ export const RecordingBar: React.FC<RecordingBarProps> = ({
       id="recording-action-bar"
       className="w-full flex flex-col md:flex-row items-center justify-between px-3 sm:px-5 py-2.5 bg-neutral-900/95 border-t border-neutral-800 backdrop-blur-md gap-2.5 md:gap-0 z-20"
     >
+      <div className="w-full md:w-auto flex items-center justify-center md:justify-start">
+        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-black text-emerald-300">
+          DIRECT CAMERA MASTER
+        </span>
+      </div>
+
       {/* Left: Audio VU Meter & Quick Controls */}
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
         {/* Audio VU Meter & Quick Preamp Control */}
@@ -352,7 +358,7 @@ export const RecordingBar: React.FC<RecordingBarProps> = ({
               <span>
                 {recordingState.countdown !== null
                   ? `Starting in ${recordingState.countdown}...`
-                  : `Record in ${currentResSpec.shortName} @ ${cameraQuality.frameRate}fps`}
+                  : `Social Camera • ${currentResSpec.shortName} @ ${cameraQuality.frameRate}fps`}
               </span>
             </button>
           </>
