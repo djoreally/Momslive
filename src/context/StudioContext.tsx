@@ -21,7 +21,7 @@ import {
 } from '../types';
 import { DEFAULT_STUDIOS, PREMADE_SCRIPTS } from '../data/studios';
 import { StudioAudioEngine } from '../utils/audio';
-import { enumerateCameraDevices, buildCameraConstraints } from '../utils/camera';
+import { enumerateCameraDevices, buildCameraConstraints, getSafeCaptureConfig } from '../utils/camera';
 import { StudioCanvasHandle } from '../components/StudioCanvas';
 
 interface StudioContextType {
@@ -93,8 +93,8 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const canvasHandleRef = useRef<StudioCanvasHandle | null>(null);
 
   const [cameraQuality, setCameraQuality] = useState<CameraQualityConfig>({
-    resolution: '4k',
-    frameRate: 60,
+    resolution: '1080p',
+    frameRate: 30,
     facingMode: 'user',
     selectedDeviceId: '',
     actualWidth: 0,
@@ -177,8 +177,11 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     async (overrides?: Partial<CameraQualityConfig>) => {
       setCameraError(null);
 
-      const targetRes = overrides?.resolution ?? cameraQuality.resolution;
-      const targetFps = overrides?.frameRate ?? cameraQuality.frameRate;
+      const requestedRes = overrides?.resolution ?? cameraQuality.resolution;
+      const requestedFps = overrides?.frameRate ?? cameraQuality.frameRate;
+      const safeCapture = getSafeCaptureConfig(requestedRes, requestedFps);
+      const targetRes = safeCapture.resolution;
+      const targetFps = safeCapture.frameRate;
       const targetFacing = overrides?.facingMode ?? cameraQuality.facingMode;
       const targetDeviceId =
         overrides?.selectedDeviceId !== undefined
@@ -219,6 +222,8 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setCameraQuality((prev) => ({
           ...prev,
           ...overrides,
+          resolution: targetRes,
+          frameRate: targetFps,
           actualWidth: actualW,
           actualHeight: actualH,
           actualFrameRate: actualFps,
@@ -264,6 +269,8 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           setCameraQuality((prev) => ({
             ...prev,
             ...overrides,
+            resolution: targetRes,
+            frameRate: targetFps,
             actualWidth: actualW,
             actualHeight: actualH,
             actualFrameRate: actualFps,
