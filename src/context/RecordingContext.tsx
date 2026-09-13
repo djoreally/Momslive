@@ -11,7 +11,7 @@ import {
   getSupportedMimeTypes,
   fixWebmBlobDuration,
 } from '../utils/audio';
-import { getBitrateForConfig } from '../utils/camera';
+import { getBitrateForDimensions } from '../utils/camera';
 import { useStudio } from './StudioContext';
 
 interface RecordingContextType {
@@ -106,7 +106,18 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({ children 
       mimeType = 'video/webm';
     }
 
-    const masterVideoBitrate = getBitrateForConfig(cameraQuality.resolution, cameraQuality.frameRate);
+    const captureSettings = videoTrack?.getSettings?.() || {};
+    const captureWidth =
+      captureSettings.width || cameraQuality.actualWidth || 1920;
+    const captureHeight =
+      captureSettings.height || cameraQuality.actualHeight || 1080;
+    const captureFrameRate =
+      captureSettings.frameRate || cameraQuality.actualFrameRate || cameraQuality.frameRate || 30;
+    const masterVideoBitrate = getBitrateForDimensions(
+      captureWidth,
+      captureHeight,
+      captureFrameRate
+    );
 
     try {
       const recorder = new MediaRecorder(mixedStream, {
@@ -143,8 +154,8 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({ children 
           format: recordingFormat,
           resolution: cameraQuality.resolution,
           frameRate: cameraQuality.frameRate,
-          videoWidth: cameraQuality.actualWidth || 1920,
-          videoHeight: cameraQuality.actualHeight || 1080,
+          videoWidth: captureWidth,
+          videoHeight: captureHeight,
         }));
 
         if (recordingTimerRef.current) {
