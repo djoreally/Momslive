@@ -314,41 +314,6 @@ export const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(({
         ctx.restore();
       }
 
-      if (showBrandedOverlays) {
-        ctx.save();
-        // If studio backdrop already has graphics, draw subtle complementary lower third or live badge
-        if (isRecording) {
-          const scaleFactor = Math.max(1, canvasHeight / 1080);
-          const badgeX = 24 * scaleFactor;
-          const badgeY = 24 * scaleFactor;
-          const badgeW = 92 * scaleFactor;
-          const badgeH = 32 * scaleFactor;
-          const badgeR = 16 * scaleFactor;
-
-          // Recording Live Pill Top Left
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.95)';
-          ctx.beginPath();
-          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeR);
-          ctx.fill();
-
-          // Blinking white circle
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(badgeX + 16 * scaleFactor, badgeY + badgeH / 2, 5 * scaleFactor, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.font = `700 ${Math.round(13 * scaleFactor)}px 'Plus Jakarta Sans', sans-serif`;
-          ctx.fillStyle = '#ffffff';
-          ctx.fillText('REC', badgeX + 28 * scaleFactor, badgeY + badgeH / 2 + 4.5 * scaleFactor);
-
-          // Resolution tag badge in recording indicator
-          const resTag = resolution.toUpperCase();
-          ctx.font = `600 ${Math.round(10 * scaleFactor)}px 'Plus Jakarta Sans', sans-serif`;
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-          ctx.fillText(resTag, badgeX + 60 * scaleFactor, badgeY + badgeH / 2 + 4 * scaleFactor);
-        }
-        ctx.restore();
-      }
 
       animationId = requestAnimationFrame(render);
     };
