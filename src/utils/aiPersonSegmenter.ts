@@ -32,15 +32,23 @@ async function getSegmenter(): Promise<SegmenterLike> {
     segmenterPromise = (async () => {
       const visionModule = await import(/* @vite-ignore */ MODULE_URL);
       const vision = await visionModule.FilesetResolver.forVisionTasks(WASM_URL);
-      return visionModule.ImageSegmenter.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: MODEL_URL,
-          delegate: 'CPU',
-        },
-        runningMode: 'VIDEO',
-        outputCategoryMask: true,
-        outputConfidenceMasks: false,
-      }) as Promise<SegmenterLike>;
+      const create = (delegate: 'GPU' | 'CPU') =>
+        visionModule.ImageSegmenter.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: MODEL_URL,
+            delegate,
+          },
+          runningMode: 'VIDEO',
+          outputCategoryMask: true,
+          outputConfidenceMasks: false,
+        }) as Promise<SegmenterLike>;
+
+      try {
+        return await create('GPU');
+      } catch (gpuError) {
+        console.warn('MediaPipe GPU delegate unavailable; falling back to CPU:', gpuError);
+        return create('CPU');
+      }
     })();
   }
   return segmenterPromise;
@@ -50,6 +58,9 @@ export async function prepareAiPersonSegmenter(): Promise<void> {
   await getSegmenter();
 }
 
+let clothingSampleCanvas: HTMLCanvasElement | null = null;
+let clothingSampleCtx: CanvasRenderingContext2D | null = null;
+
 function detectWhiteClothing(
   video: HTMLVideoElement,
   categories: Uint8Array,
@@ -58,11 +69,18 @@ function detectWhiteClothing(
 ): boolean {
   if (maskWidth <= 0 || maskHeight <= 0) return false;
 
-  const sample = document.createElement('canvas');
-  sample.width = maskWidth;
-  sample.height = maskHeight;
-  const ctx = sample.getContext('2d', { willReadFrequently: true });
+  if (!clothingSampleCanvas) {
+    clothingSampleCanvas = document.createElement('canvas');
+    clothingSampleCtx = clothingSampleCanvas.getContext('2d', { willReadFrequently: true });
+  }
+  const sample = clothingSampleCanvas;
+  const ctx = clothingSampleCtx;
   if (!ctx) return false;
+
+  if (sample.width !== maskWidth || sample.height !== maskHeight) {
+    sample.width = maskWidth;
+    sample.height = maskHeight;
+  }
 
   ctx.drawImage(video, 0, 0, maskWidth, maskHeight);
   const pixels = ctx.getImageData(0, 0, maskWidth, maskHeight).data;
