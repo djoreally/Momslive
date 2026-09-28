@@ -369,10 +369,27 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const handleUploadCustomBg = async (file: File) => {
-    const newSetting = await saveBackgroundPreset(file);
-    setSettingsList((prev) => [newSetting, ...prev.filter((item) => item.id !== newSetting.id)]);
-    setCurrentSetting(newSetting);
-    setCaptureMode('studio');
+    try {
+      const newSetting = await saveBackgroundPreset(file);
+      setSettingsList((prev) => [newSetting, ...prev.filter((item) => item.id !== newSetting.id)]);
+      setCurrentSetting(newSetting);
+      setCaptureMode('studio');
+    } catch (err) {
+      console.warn('Background persistence unavailable; keeping this preset for the current session:', err);
+      const url = URL.createObjectURL(file);
+      const sessionSetting: StudioSetting = {
+        id: `session_${Date.now()}`,
+        name: file.name.replace(/\.[^.]+$/, '').slice(0, 32) || 'Custom Background',
+        thumbnailUrl: url,
+        bgImageUrl: url,
+        category: 'custom',
+        blur: 0,
+        brightness: 1,
+      };
+      setSettingsList((prev) => [sessionSetting, ...prev]);
+      setCurrentSetting(sessionSetting);
+      setCaptureMode('studio');
+    }
   };
 
   useEffect(() => {
