@@ -20,6 +20,7 @@ import {
 import { useStudio } from '../../context/StudioContext';
 import { useRecording } from '../../context/RecordingContext';
 import { StudioCanvas } from '../StudioCanvas';
+import { CleanCameraPreview } from '../CleanCameraPreview';
 import { Teleprompter } from '../Teleprompter';
 import { SettingControls } from '../SettingControls';
 import { MicrophoneControls } from '../MicrophoneControls';
@@ -60,6 +61,8 @@ export const MobileStudioLayout: React.FC = () => {
     setFraming,
     micConfig,
     setMicConfig,
+    captureMode,
+    setCaptureMode,
     settingsList,
     currentSetting,
     setCurrentSetting,
@@ -85,7 +88,7 @@ export const MobileStudioLayout: React.FC = () => {
     clearRecording,
   } = useRecording();
 
-  const [activeTab, setActiveTab] = useState<MobileTab>('studio');
+  const [activeTab, setActiveTab] = useState<MobileTab>('record');
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
 
   const formatTimer = (seconds: number) => {
@@ -176,32 +179,45 @@ export const MobileStudioLayout: React.FC = () => {
           isOverlay={true}
         />
 
-        {/* Studio Compositing Canvas */}
-        <StudioCanvas
-          ref={canvasHandleRef}
-          stream={stream}
-          chromaConfig={chromaConfig}
-          framing={framing}
-          micConfig={micConfig}
-          studioSetting={currentSetting}
-          aspectRatio={aspectRatio}
-          showBrandedOverlays={showBrandedOverlays}
-          showMomsOverlay={showMomsOverlay}
-          audioLevel={audioLevel}
-          isSamplingColor={isSamplingColor}
-          onSampledColor={handleSampledColor}
-          isRecording={recordingState.isRecording}
-          resolution={cameraQuality.resolution}
-          frameRate={cameraQuality.frameRate}
-        />
+        {/* Quick Record uses the native camera; Studio keeps the full MOMS composite. */}
+        {captureMode === 'record' ? (
+          <CleanCameraPreview
+            stream={stream}
+            mirror={cameraQuality.facingMode === 'user' && framing.mirror}
+          />
+        ) : (
+          <StudioCanvas
+            ref={canvasHandleRef}
+            stream={stream}
+            chromaConfig={chromaConfig}
+            framing={framing}
+            micConfig={micConfig}
+            studioSetting={currentSetting}
+            aspectRatio={aspectRatio}
+            showBrandedOverlays={showBrandedOverlays}
+            showMomsOverlay={showMomsOverlay}
+            audioLevel={audioLevel}
+            isSamplingColor={isSamplingColor}
+            onSampledColor={handleSampledColor}
+            isRecording={recordingState.isRecording}
+            resolution={cameraQuality.resolution}
+            frameRate={cameraQuality.frameRate}
+          />
+        )}
 
         {/* Visual Recording Session Timer HUD (Mobile Top Center) */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
           <RecordingTimer compact />
         </div>
 
-        {/* Floating Quick Action Overlay on Studio View */}
-        {activeTab === 'studio' && (
+        {captureMode === 'studio' && activeTab === 'studio' && (
+          <button onClick={() => setActiveTab('tools')} className="absolute top-3 right-3 z-30 p-2 rounded-full bg-neutral-900/80 border border-neutral-700 text-white backdrop-blur shadow-lg" title="Studio camera, white-wall, and microphone tools">
+            <Sliders className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Floating Quick Action Overlay on active recording view */}
+        {(activeTab === 'record' || activeTab === 'studio') && (
           <div className="absolute bottom-4 left-0 right-0 z-20 flex items-center justify-around px-4 pointer-events-none">
             {/* Snapshot button */}
             <button
@@ -243,7 +259,7 @@ export const MobileStudioLayout: React.FC = () => {
                   onClick={startRecording}
                   disabled={!stream}
                   className="w-16 h-16 rounded-full bg-gradient-to-tr from-rose-600 to-rose-500 border-4 border-white/90 flex items-center justify-center text-white shadow-2xl shadow-rose-600/50 active:scale-95 disabled:opacity-50"
-                  title="Start Studio Recording"
+                  title={captureMode === 'studio' ? 'Start Studio Recording' : 'Start Quick Recording'}
                 >
                   <div className="w-6 h-6 rounded-full bg-white shadow-inner" />
                 </button>
@@ -268,19 +284,18 @@ export const MobileStudioLayout: React.FC = () => {
         )}
 
         {/* Modal Bottom Sheet for other tabs */}
-        {activeTab !== 'studio' && (
+        {activeTab !== 'studio' && activeTab !== 'record' && (
           <div className="absolute inset-0 z-30 bg-neutral-950/95 backdrop-blur-md flex flex-col animate-in slide-in-from-bottom duration-200">
             {/* Sheet Header */}
             <div className="p-3 border-b border-neutral-800 flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                {activeTab === 'sets' && 'Virtual Backgrounds'}
-                {activeTab === 'mic' && 'Microphone & Vocal Preamp'}
-                {activeTab === 'camera' && 'White Wall Chroma & Lens'}
+                {activeTab === 'backgrounds' && 'Studio Backgrounds'}
+                {activeTab === 'tools' && 'Studio Camera, White Wall & Microphone'}
                 {activeTab === 'vault' && 'Cloud Vault & $0 Cost Optimizer'}
                 {activeTab === 'prompter' && 'Teleprompter Script'}
               </span>
               <button
-                onClick={() => setActiveTab('studio')}
+                onClick={() => setActiveTab(captureMode)}
                 className="p-1.5 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
@@ -291,11 +306,14 @@ export const MobileStudioLayout: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {activeTab === 'vault' && <CloudinaryVaultPanel />}
 
-              {activeTab === 'sets' && (
+              {activeTab === 'backgrounds' && (
                 <SettingControls
                   currentSetting={currentSetting}
                   settingsList={settingsList}
-                  onSelectSetting={setCurrentSetting}
+                  onSelectSetting={(setting) => {
+                    setCurrentSetting(setting);
+                    setCaptureMode('studio');
+                  }}
                   aspectRatio={aspectRatio}
                   onChangeAspectRatio={setAspectRatio}
                   showBrandedOverlays={showBrandedOverlays}
@@ -309,20 +327,11 @@ export const MobileStudioLayout: React.FC = () => {
                   }
                 />
               )}
-
-              {activeTab === 'mic' && (
-                <MicrophoneControls
-                  config={micConfig}
-                  onChange={setMicConfig}
-                  audioLevel={audioLevel}
-                  audioPeak={audioPeak}
-                  audioConfig={audioConfig}
-                  onChangeAudioConfig={handleAudioConfigChange}
-                />
-              )}
-
-              {activeTab === 'camera' && (
-                <div className="space-y-4">
+              {activeTab === 'tools' && (
+                <div className="space-y-5">
+                  <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-100">
+                    For the cleanest white-wall key, start with Auto Sample. Use Empty Wall capture when you can step out of frame for a moment.
+                  </div>
                   <CalibrationPanel
                     config={chromaConfig}
                     onChangeConfig={setChromaConfig}
@@ -336,7 +345,6 @@ export const MobileStudioLayout: React.FC = () => {
                     onAutoSampleWall={handleAutoSampleWall}
                     sampledStats={sampledStats}
                   />
-
                   <CameraSettingsPanel
                     config={cameraQuality}
                     onChangeConfig={handleCameraConfigChange}
@@ -345,6 +353,14 @@ export const MobileStudioLayout: React.FC = () => {
                     aspectRatio={aspectRatio}
                     mirror={framing.mirror}
                     onToggleMirror={() => setFraming((prev) => ({ ...prev, mirror: !prev.mirror }))}
+                  />
+                  <MicrophoneControls
+                    config={micConfig}
+                    onChange={setMicConfig}
+                    audioLevel={audioLevel}
+                    audioPeak={audioPeak}
+                    audioConfig={audioConfig}
+                    onChangeAudioConfig={handleAudioConfigChange}
                   />
                 </div>
               )}
@@ -363,54 +379,20 @@ export const MobileStudioLayout: React.FC = () => {
 
       {/* Bottom Mobile Tab Bar */}
       <nav className="h-14 bg-neutral-950 border-t border-neutral-800 flex items-center justify-around px-1 z-30 shrink-0">
-        <button
-          onClick={() => setActiveTab('studio')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
-            activeTab === 'studio' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'
-          }`}
-        >
-          <Video className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Studio</span>
+        <button onClick={() => { setCaptureMode('record'); setActiveTab('record'); }} className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${captureMode === 'record' && activeTab === 'record' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'}`}>
+          <Video className="w-4 h-4" /><span className="text-[10px] mt-0.5">Record</span>
         </button>
-
-        <button
-          onClick={() => setActiveTab('sets')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
-            activeTab === 'sets' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Sets</span>
+        <button onClick={() => { setCaptureMode('studio'); setActiveTab('studio'); }} className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${captureMode === 'studio' && activeTab === 'studio' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'}`}>
+          <Camera className="w-4 h-4" /><span className="text-[10px] mt-0.5">Studio</span>
         </button>
-
-        <button
-          onClick={() => setActiveTab('mic')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
-            activeTab === 'mic' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'
-          }`}
-        >
-          <Mic className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Mic</span>
+        <button onClick={() => setActiveTab('prompter')} className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${activeTab === 'prompter' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'}`}>
+          <FileText className="w-4 h-4" /><span className="text-[10px] mt-0.5">Prompter</span>
         </button>
-
-        <button
-          onClick={() => setActiveTab('camera')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
-            activeTab === 'camera' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'
-          }`}
-        >
-          <Sliders className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Wall/Cam</span>
+        <button onClick={() => setActiveTab('backgrounds')} className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${activeTab === 'backgrounds' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'}`}>
+          <Layers className="w-4 h-4" /><span className="text-[10px] mt-0.5">Backgrounds</span>
         </button>
-
-        <button
-          onClick={() => setActiveTab('vault')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all ${
-            activeTab === 'vault' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'
-          }`}
-        >
-          <Cloud className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Vault</span>
+        <button onClick={() => setActiveTab('vault')} className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${activeTab === 'vault' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'}`}>
+          <Cloud className="w-4 h-4" /><span className="text-[10px] mt-0.5">Vault</span>
         </button>
       </nav>
 
@@ -430,7 +412,7 @@ export const MobileStudioLayout: React.FC = () => {
       <WhiteWallGuideModal
         isOpen={showGuideModal}
         onClose={() => setShowGuideModal(false)}
-        onStartCalibration={() => setActiveTab('camera')}
+        onStartCalibration={() => { setCaptureMode('studio'); setActiveTab('tools'); }}
       />
     </div>
   );
