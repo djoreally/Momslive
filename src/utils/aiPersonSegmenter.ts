@@ -51,7 +51,12 @@ async function getSegmenter(): Promise<SegmenterLike> {
       }
     })();
   }
-  return segmenterPromise;
+  try {
+    return await segmenterPromise;
+  } catch (err) {
+    segmenterPromise = null;
+    throw err;
+  }
 }
 
 export async function prepareAiPersonSegmenter(): Promise<void> {
