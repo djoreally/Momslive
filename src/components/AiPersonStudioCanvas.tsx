@@ -57,6 +57,10 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
   const lastInferenceRef = useRef(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+  const inferenceIntervalMs = isMobile ? 180 : 110;
+  const previewFrameIntervalMs = isMobile ? 40 : 33;
+  const processingMaxWidth = isMobile ? 720 : 1280;
 
   const { width: canvasWidth, height: canvasHeight } = getTargetDimensions(
     resolution,
@@ -112,7 +116,7 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
   const updateMask = useCallback((video: HTMLVideoElement) => {
     if (!ready || processingRef.current) return;
     const now = performance.now();
-    if (now - lastInferenceRef.current < 90) return;
+    if (now - lastInferenceRef.current < inferenceIntervalMs) return;
 
     lastInferenceRef.current = now;
     processingRef.current = true;
@@ -126,10 +130,14 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
 
         const maskCanvas = personMaskRef.current;
         const clothesCanvas = clothingTintRef.current;
-        maskCanvas.width = frame.width;
-        maskCanvas.height = frame.height;
-        clothesCanvas.width = frame.width;
-        clothesCanvas.height = frame.height;
+        if (maskCanvas.width !== frame.width || maskCanvas.height !== frame.height) {
+          maskCanvas.width = frame.width;
+          maskCanvas.height = frame.height;
+        }
+        if (clothesCanvas.width !== frame.width || clothesCanvas.height !== frame.height) {
+          clothesCanvas.width = frame.width;
+          clothesCanvas.height = frame.height;
+        }
 
         const maskCtx = maskCanvas.getContext('2d');
         const clothesCtx = clothesCanvas.getContext('2d');
@@ -164,7 +172,7 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
       .finally(() => {
         processingRef.current = false;
       });
-  }, [ready]);
+  }, [ready, inferenceIntervalMs]);
 
   const takeSnapshot = useCallback((): string | null => {
     return mainCanvasRef.current?.toDataURL('image/jpeg', 0.95) || null;
@@ -182,9 +190,15 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
   useEffect(() => {
     let raf = 0;
     let active = true;
+    let lastRender = 0;
 
-    const render = () => {
+    const render = (now = performance.now()) => {
       if (!active) return;
+      if (now - lastRender < previewFrameIntervalMs) {
+        raf = requestAnimationFrame(render);
+        return;
+      }
+      lastRender = now;
 
       const canvas = mainCanvasRef.current;
       const video = videoRef.current;
@@ -235,31 +249,36 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
         const working = workingCanvasRef.current;
         const vw = video.videoWidth;
         const vh = video.videoHeight;
-        working.width = vw;
-        working.height = vh;
-        const workCtx = working.getContext('2d');
+        const processWidth = Math.min(vw, processingMaxWidth);
+        const processHeight = Math.max(1, Math.round((vh / vw) * processWidth));
+
+        if (working.width !== processWidth || working.height !== processHeight) {
+          working.width = processWidth;
+          working.height = processHeight;
+        }
+        const workCtx = working.getContext('2d', { alpha: true });
 
         if (workCtx) {
-          workCtx.clearRect(0, 0, vw, vh);
-          workCtx.drawImage(video, 0, 0, vw, vh);
+          workCtx.clearRect(0, 0, processWidth, processHeight);
+          workCtx.drawImage(video, 0, 0, processWidth, processHeight);
 
           const mask = personMaskRef.current;
           if (ready && mask) {
             workCtx.save();
             workCtx.globalCompositeOperation = 'destination-in';
-            workCtx.drawImage(mask, 0, 0, vw, vh);
+            workCtx.drawImage(mask, 0, 0, processWidth, processHeight);
             workCtx.restore();
 
             if (studioSetting.id === 'clean_white' && clothingTintRef.current) {
               workCtx.save();
               workCtx.globalCompositeOperation = 'source-atop';
-              workCtx.drawImage(clothingTintRef.current, 0, 0, vw, vh);
+              workCtx.drawImage(clothingTintRef.current, 0, 0, processWidth, processHeight);
               workCtx.restore();
             }
           }
 
           const targetUserWidth = canvasWidth * 1.15 * framing.scale;
-          const targetUserHeight = (vh / vw) * targetUserWidth;
+          const targetUserHeight = (processHeight / processWidth) * targetUserWidth;
           const centerX = canvasWidth * 0.5 + (framing.offsetX / 100) * canvasWidth;
           const bottomY = canvasHeight * 1.05 + (framing.offsetY / 100) * canvasHeight;
           const drawX = centerX - targetUserWidth / 2;
@@ -308,6 +327,8 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
     isRecording,
     ready,
     updateMask,
+    previewFrameIntervalMs,
+    processingMaxWidth,
   ]);
 
   return (
