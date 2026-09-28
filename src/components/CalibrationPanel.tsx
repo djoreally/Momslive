@@ -169,13 +169,20 @@ export const CalibrationPanel: React.FC<CalibrationPanelProps> = ({
           )}
         </div>
         <p className="text-xs text-neutral-400 leading-relaxed">
-          Step out of the camera view for 2 seconds and capture the empty white wall. The app subtracts the wall cleanly.
+          {config.mode === 'ai_person'
+            ? 'AI Cutout is active, so no empty-wall capture is needed. Switch AI off above to use this manual fallback.'
+            : 'Step out of the camera view for 2 seconds and capture the empty wall. The app subtracts the wall cleanly.'}
         </p>
         <div className="flex gap-2 pt-1">
           <button
             id="capture-empty-wall-btn"
             onClick={onCaptureEmptyWall}
-            className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow transition-colors flex items-center justify-center gap-1.5"
+            disabled={config.mode === 'ai_person'}
+            className={`flex-1 py-2 px-3 rounded-lg text-white text-xs font-semibold shadow transition-colors flex items-center justify-center gap-1.5 ${
+              config.mode === 'ai_person'
+                ? 'bg-neutral-700 opacity-50 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-500'
+            }`}
           >
             <Camera className="w-3.5 h-3.5" />
             <span>Capture Empty Wall</span>
