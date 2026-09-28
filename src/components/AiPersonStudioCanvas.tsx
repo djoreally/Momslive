@@ -287,18 +287,6 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
         ctx.restore();
       }
 
-      if (showBrandedOverlays && isRecording) {
-        ctx.save();
-        const scale = Math.max(1, canvasHeight / 1080);
-        ctx.fillStyle = 'rgba(239,68,68,.95)';
-        ctx.beginPath();
-        ctx.roundRect(24 * scale, 24 * scale, 96 * scale, 32 * scale, 16 * scale);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.font = `700 ${Math.round(13 * scale)}px Arial, sans-serif`;
-        ctx.fillText('● REC', 38 * scale, 45 * scale);
-        ctx.restore();
-      }
 
       raf = requestAnimationFrame(render);
     };
