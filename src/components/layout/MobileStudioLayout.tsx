@@ -21,6 +21,7 @@ import { useStudio } from '../../context/StudioContext';
 import { useRecording } from '../../context/RecordingContext';
 import { StudioCanvas } from '../StudioCanvas';
 import { CleanCameraPreview } from '../CleanCameraPreview';
+import { AiPersonStudioCanvas } from '../AiPersonStudioCanvas';
 import { Teleprompter } from '../Teleprompter';
 import { SettingControls } from '../SettingControls';
 import { MicrophoneControls } from '../MicrophoneControls';
@@ -184,6 +185,22 @@ export const MobileStudioLayout: React.FC = () => {
           <CleanCameraPreview
             stream={stream}
             mirror={cameraQuality.facingMode === 'user' && framing.mirror}
+          />
+        ) : chromaConfig.mode === 'ai_person' ? (
+          <AiPersonStudioCanvas
+            ref={canvasHandleRef}
+            stream={stream}
+            framing={framing}
+            micConfig={micConfig}
+            studioSetting={currentSetting}
+            aspectRatio={aspectRatio}
+            showBrandedOverlays={showBrandedOverlays}
+            showMomsOverlay={showMomsOverlay}
+            audioLevel={audioLevel}
+            isRecording={recordingState.isRecording}
+            active={activeTab === 'studio' || recordingState.isRecording}
+            resolution={cameraQuality.resolution}
+            frameRate={cameraQuality.frameRate}
           />
         ) : (
           <StudioCanvas
@@ -379,7 +396,7 @@ export const MobileStudioLayout: React.FC = () => {
 
       {/* Bottom Mobile Tab Bar */}
       <nav className="h-14 bg-neutral-950 border-t border-neutral-800 flex items-center justify-around px-1 z-30 shrink-0">
-        <button onClick={() => { setCaptureMode('record'); setActiveTab('record'); }} className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${captureMode === 'record' && activeTab === 'record' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'}`}>
+        <button onClick={() => { handleClearEmptyWall(); setCaptureMode('record'); setActiveTab('record'); }} className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${captureMode === 'record' && activeTab === 'record' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'}`}>
           <Video className="w-4 h-4" /><span className="text-[10px] mt-0.5">Record</span>
         </button>
         <button onClick={() => { setCaptureMode('studio'); setActiveTab('studio'); }} className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${captureMode === 'studio' && activeTab === 'studio' ? 'text-blue-400 font-bold scale-105' : 'text-neutral-400'}`}>

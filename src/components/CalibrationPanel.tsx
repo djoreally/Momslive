@@ -65,12 +65,45 @@ export const CalibrationPanel: React.FC<CalibrationPanelProps> = ({
 
   return (
     <div id="calibration-panel" className="space-y-5 text-sm text-neutral-200">
+      <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/40 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-300" />
+              <span className="font-semibold text-white text-xs uppercase tracking-wider">
+                AI Person Cutout
+              </span>
+              <span className="text-[10px] rounded-full bg-blue-500/20 border border-blue-400/30 px-2 py-0.5 text-blue-200 font-bold">
+                RECOMMENDED
+              </span>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-blue-100/80">
+              No white wall is required. The model separates the person from any room or background.
+              On the Clean White preset, mostly-white clothing is automatically tinted MOMS blue for contrast.
+            </p>
+          </div>
+          <button
+            id="toggle-ai-person-cutout"
+            onClick={() => onChangeConfig({
+              ...config,
+              mode: config.mode === 'ai_person' ? 'luminance_white' : 'ai_person',
+            })}
+            className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+              config.mode === 'ai_person'
+                ? 'bg-blue-600 text-white'
+                : 'bg-neutral-700 text-neutral-200 hover:bg-neutral-600'
+            }`}
+          >
+            {config.mode === 'ai_person' ? 'AI ON' : 'Enable AI'}
+          </button>
+        </div>
+      </div>
       {/* Wall Quality & Sampling Header */}
       <div className="p-3.5 rounded-xl bg-neutral-800/80 border border-neutral-700 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-blue-400" />
-            <span className="font-semibold text-white text-xs uppercase tracking-wider">White Wall Calibration</span>
+            <span className="font-semibold text-white text-xs uppercase tracking-wider">Manual White-Wall Fallback</span>
           </div>
           {sampledStats && (
             <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
@@ -136,13 +169,20 @@ export const CalibrationPanel: React.FC<CalibrationPanelProps> = ({
           )}
         </div>
         <p className="text-xs text-neutral-400 leading-relaxed">
-          Step out of the camera view for 2 seconds and capture the empty white wall. The app subtracts the wall cleanly.
+          {config.mode === 'ai_person'
+            ? 'AI Cutout is active, so no empty-wall capture is needed. Switch AI off above to use this manual fallback.'
+            : 'Step out of the camera view for 2 seconds and capture the empty wall. The app subtracts the wall cleanly.'}
         </p>
         <div className="flex gap-2 pt-1">
           <button
             id="capture-empty-wall-btn"
             onClick={onCaptureEmptyWall}
-            className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow transition-colors flex items-center justify-center gap-1.5"
+            disabled={config.mode === 'ai_person'}
+            className={`flex-1 py-2 px-3 rounded-lg text-white text-xs font-semibold shadow transition-colors flex items-center justify-center gap-1.5 ${
+              config.mode === 'ai_person'
+                ? 'bg-neutral-700 opacity-50 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-500'
+            }`}
           >
             <Camera className="w-3.5 h-3.5" />
             <span>Capture Empty Wall</span>

@@ -121,7 +121,7 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   });
 
   const [chromaConfig, setChromaConfig] = useState<ChromaKeyConfig>({
-    mode: 'luminance_white',
+    mode: 'ai_person',
     luminanceThreshold: 0.9,
     tolerance: 0.12,
     softness: 0.05,
@@ -157,9 +157,7 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const [captureMode, setCaptureMode] = useState<CaptureMode>('record');
   const [settingsList, setSettingsList] = useState<StudioSetting[]>(DEFAULT_STUDIOS);
-  const [currentSetting, setCurrentSetting] = useState<StudioSetting>(
-    DEFAULT_STUDIOS.find((setting) => setting.id === 'moms_splash') || DEFAULT_STUDIOS[0]
-  );
+  const [currentSetting, setCurrentSetting] = useState<StudioSetting>(DEFAULT_STUDIOS[0]);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
   const [showBrandedOverlays, setShowBrandedOverlays] = useState<boolean>(true);
   const [showMomsOverlay, setShowMomsOverlay] = useState<boolean>(true);
@@ -371,10 +369,27 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const handleUploadCustomBg = async (file: File) => {
-    const newSetting = await saveBackgroundPreset(file);
-    setSettingsList((prev) => [newSetting, ...prev.filter((item) => item.id !== newSetting.id)]);
-    setCurrentSetting(newSetting);
-    setCaptureMode('studio');
+    try {
+      const newSetting = await saveBackgroundPreset(file);
+      setSettingsList((prev) => [newSetting, ...prev.filter((item) => item.id !== newSetting.id)]);
+      setCurrentSetting(newSetting);
+      setCaptureMode('studio');
+    } catch (err) {
+      console.warn('Background persistence unavailable; keeping this preset for the current session:', err);
+      const url = URL.createObjectURL(file);
+      const sessionSetting: StudioSetting = {
+        id: `session_${Date.now()}`,
+        name: file.name.replace(/\.[^.]+$/, '').slice(0, 32) || 'Custom Background',
+        thumbnailUrl: url,
+        bgImageUrl: url,
+        category: 'custom',
+        blur: 0,
+        brightness: 1,
+      };
+      setSettingsList((prev) => [sessionSetting, ...prev]);
+      setCurrentSetting(sessionSetting);
+      setCaptureMode('studio');
+    }
   };
 
   useEffect(() => {

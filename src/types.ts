@@ -1,7 +1,7 @@
 export type AspectRatio = '9:16' | '16:9';
 
 export interface ChromaKeyConfig {
-  mode: 'luminance_white' | 'color_sample' | 'difference_matte';
+  mode: 'ai_person' | 'luminance_white' | 'color_sample' | 'difference_matte';
   luminanceThreshold: number; // 0.5 - 0.98, default ~0.78
   tolerance: number; // 0.05 - 0.5, default ~0.20
   softness: number; // 0.01 - 0.3, default ~0.08 (feathering)
