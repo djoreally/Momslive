@@ -260,10 +260,10 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
 
         if (workCtx) {
           workCtx.clearRect(0, 0, processWidth, processHeight);
-          workCtx.drawImage(video, 0, 0, processWidth, processHeight);
 
           const mask = personMaskRef.current;
           if (ready && mask) {
+            workCtx.drawImage(video, 0, 0, processWidth, processHeight);
             workCtx.save();
             workCtx.globalCompositeOperation = 'destination-in';
             workCtx.drawImage(mask, 0, 0, processWidth, processHeight);
