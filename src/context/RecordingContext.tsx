@@ -33,6 +33,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({ children 
     canvasHandleRef,
     studioAudioEngine,
     cameraQuality,
+    captureMode,
     teleprompterConfig,
     setTeleprompterConfig,
   } = useStudio();
@@ -85,11 +86,16 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({ children 
   const executeStartRecording = () => {
     if (!stream) return;
 
-    // Social-camera architecture:
-    // Record the device camera track directly so the browser/device can use its
-    // native capture + hardware encode path. The studio canvas remains preview-only.
-    // Branding, crops and layouts are applied after capture through Remotion.
-    const sourceVideoTrack = stream.getVideoTracks()[0];
+    // Quick Record keeps the native camera master for maximum device quality.
+    // Studio Record captures the composited canvas so the selected background,
+    // keyed subject, microphone, and optional branding are preserved in the take.
+    const studioCanvasStream =
+      captureMode === 'studio' ? canvasHandleRef.current?.getCanvasStream() || null : null;
+    const sourceVideoTrack =
+      captureMode === 'studio'
+        ? studioCanvasStream?.getVideoTracks()[0]
+        : stream.getVideoTracks()[0];
+
     if (!sourceVideoTrack || sourceVideoTrack.readyState !== 'live') return;
 
     const mixedStream = new MediaStream();

@@ -18,11 +18,13 @@ import {
   CameraQualityConfig,
   CameraDeviceInfo,
   CameraFacing,
+  CaptureMode,
 } from '../types';
 import { DEFAULT_STUDIOS, PREMADE_SCRIPTS } from '../data/studios';
 import { StudioAudioEngine } from '../utils/audio';
 import { enumerateCameraDevices, buildCameraConstraints, getSafeCaptureConfig } from '../utils/camera';
 import { StudioCanvasHandle } from '../components/StudioCanvas';
+import { loadBackgroundPresets, saveBackgroundPreset } from '../utils/backgroundPresetDb';
 
 interface StudioContextType {
   // Stream & Hardware
@@ -64,6 +66,10 @@ interface StudioContextType {
   // Microphone & 3D wrap
   micConfig: MicConfig;
   setMicConfig: React.Dispatch<React.SetStateAction<MicConfig>>;
+
+  // Recording mode
+  captureMode: CaptureMode;
+  setCaptureMode: React.Dispatch<React.SetStateAction<CaptureMode>>;
 
   // Virtual sets & Aspect Ratio
   settingsList: StudioSetting[];
@@ -116,10 +122,10 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const [chromaConfig, setChromaConfig] = useState<ChromaKeyConfig>({
     mode: 'luminance_white',
-    luminanceThreshold: 0.76,
-    tolerance: 0.18,
-    softness: 0.08,
-    spillSuppression: 0.35,
+    luminanceThreshold: 0.9,
+    tolerance: 0.12,
+    softness: 0.05,
+    spillSuppression: 0.2,
     sampledColor: { r: 245, g: 245, b: 245 },
     sampleRadius: 8,
     showMatteOnly: false,
@@ -149,14 +155,17 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     audioReactiveGlow: true,
   });
 
+  const [captureMode, setCaptureMode] = useState<CaptureMode>('record');
   const [settingsList, setSettingsList] = useState<StudioSetting[]>(DEFAULT_STUDIOS);
-  const [currentSetting, setCurrentSetting] = useState<StudioSetting>(DEFAULT_STUDIOS[0]);
+  const [currentSetting, setCurrentSetting] = useState<StudioSetting>(
+    DEFAULT_STUDIOS.find((setting) => setting.id === 'moms_splash') || DEFAULT_STUDIOS[0]
+  );
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
   const [showBrandedOverlays, setShowBrandedOverlays] = useState<boolean>(true);
   const [showMomsOverlay, setShowMomsOverlay] = useState<boolean>(true);
 
   const [teleprompterConfig, setTeleprompterConfig] = useState<TeleprompterConfig>({
-    enabled: false,
+    enabled: true,
     text: PREMADE_SCRIPTS[0].text,
     fontSize: 20,
     scrollSpeed: 3,
@@ -326,7 +335,7 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setChromaConfig((prev) => ({
       ...prev,
       mode: 'color_sample',
-      sampledColor: { r: color.r, g: color.b, b: color.b },
+      sampledColor: { r: color.r, g: color.g, b: color.b },
       luminanceThreshold: Math.max(0.5, color.luminance - 0.05),
     }));
     setSampledStats({ luminance: color.luminance, saturation: color.saturation });
@@ -361,20 +370,29 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
-  const handleUploadCustomBg = (file: File) => {
-    const url = URL.createObjectURL(file);
-    const newSetting: StudioSetting = {
-      id: `custom_${Date.now()}`,
-      name: file.name.slice(0, 16),
-      thumbnailUrl: url,
-      bgImageUrl: url,
-      category: 'custom',
-      blur: 0,
-      brightness: 1.0,
-    };
-    setSettingsList((prev) => [newSetting, ...prev]);
+  const handleUploadCustomBg = async (file: File) => {
+    const newSetting = await saveBackgroundPreset(file);
+    setSettingsList((prev) => [newSetting, ...prev.filter((item) => item.id !== newSetting.id)]);
     setCurrentSetting(newSetting);
+    setCaptureMode('studio');
   };
+
+  useEffect(() => {
+    let active = true;
+    loadBackgroundPresets()
+      .then((saved) => {
+        if (!active || saved.length === 0) return;
+        setSettingsList((prev) => [
+          ...saved,
+          ...prev.filter((preset) => !saved.some((custom) => custom.id === preset.id)),
+        ]);
+      })
+      .catch((err) => console.warn('Unable to restore custom studio backgrounds:', err));
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     initCamera();
@@ -418,6 +436,8 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setFraming,
         micConfig,
         setMicConfig,
+        captureMode,
+        setCaptureMode,
         settingsList,
         currentSetting,
         setCurrentSetting,
