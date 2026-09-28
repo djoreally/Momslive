@@ -1,5 +1,4 @@
-import { FilesetResolver, ImageSegmenter } from '@mediapipe/tasks-vision';
-
+const MODULE_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs';
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm';
 const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite';
 
@@ -10,13 +9,30 @@ export interface AiSegmentationFrame {
   whiteClothingDetected: boolean;
 }
 
-let segmenterPromise: Promise<ImageSegmenter> | null = null;
+interface SegmenterResult {
+  categoryMask?: {
+    width: number;
+    height: number;
+    getAsUint8Array: () => Uint8Array;
+  };
+}
 
-async function getSegmenter(): Promise<ImageSegmenter> {
+interface SegmenterLike {
+  segmentForVideo: (
+    video: HTMLVideoElement,
+    timestampMs: number,
+    callback: (result: SegmenterResult) => void
+  ) => void;
+}
+
+let segmenterPromise: Promise<SegmenterLike> | null = null;
+
+async function getSegmenter(): Promise<SegmenterLike> {
   if (!segmenterPromise) {
     segmenterPromise = (async () => {
-      const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-      return ImageSegmenter.createFromOptions(vision, {
+      const visionModule = await import(/* @vite-ignore */ MODULE_URL);
+      const vision = await visionModule.FilesetResolver.forVisionTasks(WASM_URL);
+      return visionModule.ImageSegmenter.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: MODEL_URL,
           delegate: 'CPU',
@@ -24,7 +40,7 @@ async function getSegmenter(): Promise<ImageSegmenter> {
         runningMode: 'VIDEO',
         outputCategoryMask: true,
         outputConfidenceMasks: false,
-      });
+      }) as Promise<SegmenterLike>;
     })();
   }
   return segmenterPromise;
@@ -56,7 +72,7 @@ function detectWhiteClothing(
 
   for (let i = 0; i < categories.length; i += 1) {
     // Selfie Multiclass labels:
-    // 0 background, 1 hair, 2 body/skin, 3 face/skin, 4 clothes, 5 others/accessories.
+    // 0 background, 1 hair, 2 body/skin, 3 face/skin, 4 clothes, 5 accessories/other.
     if (categories[i] !== 4) continue;
     clothingPixels += 1;
 
