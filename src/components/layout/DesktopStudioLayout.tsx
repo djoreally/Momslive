@@ -12,6 +12,7 @@ import { useStudio } from '../../context/StudioContext';
 import { useRecording } from '../../context/RecordingContext';
 import { Header, ActiveDrawer } from '../Header';
 import { StudioCanvas } from '../StudioCanvas';
+import { AiPersonStudioCanvas } from '../AiPersonStudioCanvas';
 import { RecordingBar } from '../RecordingBar';
 import { Teleprompter } from '../Teleprompter';
 import { CalibrationPanel } from '../CalibrationPanel';
@@ -51,6 +52,8 @@ export const DesktopStudioLayout: React.FC = () => {
     setFraming,
     micConfig,
     setMicConfig,
+    captureMode,
+    setCaptureMode,
     settingsList,
     currentSetting,
     setCurrentSetting,
@@ -78,6 +81,11 @@ export const DesktopStudioLayout: React.FC = () => {
 
   const [activeDrawer, setActiveDrawer] = useState<ActiveDrawer>('none');
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    setCaptureMode('studio');
+    return () => setCaptureMode('record');
+  }, [setCaptureMode]);
 
   // Global hotkeys for desktop power users
   useEffect(() => {
@@ -168,23 +176,40 @@ export const DesktopStudioLayout: React.FC = () => {
           />
 
           {/* Main Studio Compositing Canvas */}
-          <StudioCanvas
-            ref={canvasHandleRef}
-            stream={stream}
-            chromaConfig={chromaConfig}
-            framing={framing}
-            micConfig={micConfig}
-            studioSetting={currentSetting}
-            aspectRatio={aspectRatio}
-            showBrandedOverlays={showBrandedOverlays}
-            showMomsOverlay={showMomsOverlay}
-            audioLevel={audioLevel}
-            isSamplingColor={isSamplingColor}
-            onSampledColor={handleSampledColor}
-            isRecording={recordingState.isRecording}
-            resolution={cameraQuality.resolution}
-            frameRate={cameraQuality.frameRate}
-          />
+          {chromaConfig.mode === 'ai_person' ? (
+            <AiPersonStudioCanvas
+              ref={canvasHandleRef}
+              stream={stream}
+              framing={framing}
+              micConfig={micConfig}
+              studioSetting={currentSetting}
+              aspectRatio={aspectRatio}
+              showBrandedOverlays={showBrandedOverlays}
+              showMomsOverlay={showMomsOverlay}
+              audioLevel={audioLevel}
+              isRecording={recordingState.isRecording}
+              resolution={cameraQuality.resolution}
+              frameRate={cameraQuality.frameRate}
+            />
+          ) : (
+            <StudioCanvas
+              ref={canvasHandleRef}
+              stream={stream}
+              chromaConfig={chromaConfig}
+              framing={framing}
+              micConfig={micConfig}
+              studioSetting={currentSetting}
+              aspectRatio={aspectRatio}
+              showBrandedOverlays={showBrandedOverlays}
+              showMomsOverlay={showMomsOverlay}
+              audioLevel={audioLevel}
+              isSamplingColor={isSamplingColor}
+              onSampledColor={handleSampledColor}
+              isRecording={recordingState.isRecording}
+              resolution={cameraQuality.resolution}
+              frameRate={cameraQuality.frameRate}
+            />
+          )}
 
           {/* Floating Visual Recording Session Timer HUD (Top-Center) */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
@@ -200,7 +225,7 @@ export const DesktopStudioLayout: React.FC = () => {
               <div className="max-w-md space-y-2">
                 <h2 className="text-xl font-bold text-white">Enable Camera to Begin</h2>
                 <p className="text-xs text-neutral-400 leading-relaxed">
-                  Stand in front of a white wall background. The studio removes the wall in real time and places you into the MOMS Mobile Oil Change virtual set in 4K/8K quality.
+                  No white wall is required. AI isolates you from the room in real time and places you onto the selected clean white or MOMS studio background.
                 </p>
               </div>
               <button
