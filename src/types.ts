@@ -133,7 +133,9 @@ export interface CloudinaryUsageEstimate {
   bandwidthSavedPercent: number;
 }
 
-export type MobileTab = 'studio' | 'sets' | 'camera' | 'vault' | 'prompter' | 'mic';
+export type CaptureMode = 'record' | 'studio';
+
+export type MobileTab = 'record' | 'studio' | 'backgrounds' | 'prompter' | 'vault' | 'tools';
 
 export interface RecordingState {
   isRecording: boolean;
