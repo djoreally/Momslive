@@ -157,9 +157,7 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const [captureMode, setCaptureMode] = useState<CaptureMode>('record');
   const [settingsList, setSettingsList] = useState<StudioSetting[]>(DEFAULT_STUDIOS);
-  const [currentSetting, setCurrentSetting] = useState<StudioSetting>(
-    DEFAULT_STUDIOS.find((setting) => setting.id === 'moms_splash') || DEFAULT_STUDIOS[0]
-  );
+  const [currentSetting, setCurrentSetting] = useState<StudioSetting>(DEFAULT_STUDIOS[0]);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('9:16');
   const [showBrandedOverlays, setShowBrandedOverlays] = useState<boolean>(true);
   const [showMomsOverlay, setShowMomsOverlay] = useState<boolean>(true);
