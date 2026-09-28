@@ -2,6 +2,15 @@ import { StudioSetting } from '../types';
 
 export const DEFAULT_STUDIOS: StudioSetting[] = [
   {
+    id: 'clean_white',
+    name: 'Clean White Studio',
+    thumbnailUrl: '/clean-white-studio.svg',
+    bgImageUrl: '/clean-white-studio.svg',
+    category: 'studio',
+    blur: 0,
+    brightness: 1.0,
+  },
+  {
     id: 'moms_splash',
     name: 'MOMS Golden Oil Splash',
     thumbnailUrl: '/moms_studio_bg.jpg',
