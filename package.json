@@ -29,7 +29,8 @@
     "@remotion/player": "4.0.523",
     "@remotion/cli": "4.0.523",
     "@remotion/vercel": "4.0.523",
-    "@vercel/sandbox": "^1.4.0"
+    "@vercel/sandbox": "^1.4.0",
+    "@mediapipe/tasks-vision": "1.0.1"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
