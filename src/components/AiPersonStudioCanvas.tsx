@@ -57,11 +57,12 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
   const workingCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const processingRef = useRef(false);
   const lastInferenceRef = useRef(0);
+  const captureTrackRef = useRef<CanvasCaptureMediaStreamTrack | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
   const inferenceIntervalMs = isMobile ? 180 : 110;
-  const previewFrameIntervalMs = isMobile ? 40 : 33;
+  const previewFrameIntervalMs = 33;
   const processingMaxWidth = isMobile ? 720 : 1280;
 
   const { width: canvasWidth, height: canvasHeight } = getTargetDimensions(
@@ -123,7 +124,7 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
     lastInferenceRef.current = now;
     processingRef.current = true;
 
-    segmentPersonFrame(video, now)
+    segmentPersonFrame(video)
       .then((frame) => {
         if (!frame) return;
 
@@ -181,13 +182,19 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
   }, []);
 
   useImperativeHandle(ref, () => ({
-    getCanvasStream: () => mainCanvasRef.current?.captureStream(frameRate) || null,
+    getCanvasStream: () => {
+      const canvas = mainCanvasRef.current;
+      if (!canvas) return null;
+      const stream = canvas.captureStream(0);
+      captureTrackRef.current = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
+      return stream;
+    },
     captureEmptyWallSnapshot: () => undefined,
     clearEmptyWallSnapshot: () => undefined,
     hasEmptyWallCapture: false,
     takeSnapshot,
     autoSampleWall: () => null,
-  }), [frameRate, takeSnapshot]);
+  }), [takeSnapshot]);
 
   useEffect(() => {
     let raf = 0;
@@ -272,7 +279,9 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
             workCtx.drawImage(video, 0, 0, processWidth, processHeight);
             workCtx.save();
             workCtx.globalCompositeOperation = 'destination-in';
+            workCtx.filter = isMobile ? 'blur(1.2px)' : 'blur(0.8px)';
             workCtx.drawImage(mask, 0, 0, processWidth, processHeight);
+            workCtx.filter = 'none';
             workCtx.restore();
 
             if (studioSetting.id === 'clean_white' && clothingTintRef.current) {
@@ -312,6 +321,7 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
         ctx.restore();
       }
 
+      captureTrackRef.current?.requestFrame();
 
       raf = requestAnimationFrame(render);
     };
@@ -336,6 +346,7 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
     previewFrameIntervalMs,
     processingMaxWidth,
     active,
+    isMobile,
   ]);
 
   return (
