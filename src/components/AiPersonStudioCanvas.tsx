@@ -31,6 +31,7 @@ interface AiPersonStudioCanvasProps {
   showMomsOverlay?: boolean;
   audioLevel: number;
   isRecording: boolean;
+  active?: boolean;
 }
 
 export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudioCanvasProps>(({
@@ -45,6 +46,7 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
   showMomsOverlay = true,
   audioLevel,
   isRecording,
+  active = true,
 }, ref) => {
   const mainCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -189,11 +191,15 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
 
   useEffect(() => {
     let raf = 0;
-    let active = true;
+    let mounted = true;
     let lastRender = 0;
 
     const render = (now = performance.now()) => {
-      if (!active) return;
+      if (!mounted) return;
+      if (!active && !isRecording) {
+        raf = requestAnimationFrame(render);
+        return;
+      }
       if (now - lastRender < previewFrameIntervalMs) {
         raf = requestAnimationFrame(render);
         return;
@@ -312,7 +318,7 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
 
     raf = requestAnimationFrame(render);
     return () => {
-      active = false;
+      mounted = false;
       cancelAnimationFrame(raf);
     };
   }, [
@@ -329,6 +335,7 @@ export const AiPersonStudioCanvas = forwardRef<StudioCanvasHandle, AiPersonStudi
     updateMask,
     previewFrameIntervalMs,
     processingMaxWidth,
+    active,
   ]);
 
   return (
