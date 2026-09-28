@@ -21,6 +21,7 @@ import { useStudio } from '../../context/StudioContext';
 import { useRecording } from '../../context/RecordingContext';
 import { StudioCanvas } from '../StudioCanvas';
 import { CleanCameraPreview } from '../CleanCameraPreview';
+import { AiPersonStudioCanvas } from '../AiPersonStudioCanvas';
 import { Teleprompter } from '../Teleprompter';
 import { SettingControls } from '../SettingControls';
 import { MicrophoneControls } from '../MicrophoneControls';
@@ -184,6 +185,21 @@ export const MobileStudioLayout: React.FC = () => {
           <CleanCameraPreview
             stream={stream}
             mirror={cameraQuality.facingMode === 'user' && framing.mirror}
+          />
+        ) : chromaConfig.mode === 'ai_person' ? (
+          <AiPersonStudioCanvas
+            ref={canvasHandleRef}
+            stream={stream}
+            framing={framing}
+            micConfig={micConfig}
+            studioSetting={currentSetting}
+            aspectRatio={aspectRatio}
+            showBrandedOverlays={showBrandedOverlays}
+            showMomsOverlay={showMomsOverlay}
+            audioLevel={audioLevel}
+            isRecording={recordingState.isRecording}
+            resolution={cameraQuality.resolution}
+            frameRate={cameraQuality.frameRate}
           />
         ) : (
           <StudioCanvas
