@@ -121,7 +121,7 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   });
 
   const [chromaConfig, setChromaConfig] = useState<ChromaKeyConfig>({
-    mode: 'luminance_white',
+    mode: 'ai_person',
     luminanceThreshold: 0.9,
     tolerance: 0.12,
     softness: 0.05,
