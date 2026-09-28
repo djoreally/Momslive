@@ -198,6 +198,7 @@ export const MobileStudioLayout: React.FC = () => {
             showMomsOverlay={showMomsOverlay}
             audioLevel={audioLevel}
             isRecording={recordingState.isRecording}
+            active={activeTab === 'studio' || recordingState.isRecording}
             resolution={cameraQuality.resolution}
             frameRate={cameraQuality.frameRate}
           />
