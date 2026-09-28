@@ -122,10 +122,10 @@ export const StudioProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const [chromaConfig, setChromaConfig] = useState<ChromaKeyConfig>({
     mode: 'luminance_white',
-    luminanceThreshold: 0.76,
-    tolerance: 0.18,
-    softness: 0.08,
-    spillSuppression: 0.35,
+    luminanceThreshold: 0.9,
+    tolerance: 0.12,
+    softness: 0.05,
+    spillSuppression: 0.2,
     sampledColor: { r: 245, g: 245, b: 245 },
     sampleRadius: 8,
     showMatteOnly: false,
